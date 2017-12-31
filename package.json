@@ -1,0 +1,16 @@
+{
+  "name": "stockmarket",
+  "version": "1.0.0",
+  "description": "A simple stock market simulator to practice trading using virtual stocks",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "stock",
+    "market",
+    "finance"
+  ],
+  "author": "Shoumyo Chakravorti",
+  "license": "ISC"
+}
