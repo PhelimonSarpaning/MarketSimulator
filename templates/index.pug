@@ -1,0 +1,47 @@
+doctype html
+html
+	head
+		title StockMarket
+		link(rel='stylesheet', href='/bower_components/bootstrap/dist/css/bootstrap.css')
+		link(rel='stylesheet', href='/css/style.css')
+	body
+		nav.navbar.navbar-expand-md.navbar-dark.bg-dark
+			a.navbar-brand(href='/') StockMarket
+			button.navbar-toggler.navbar-toggler-right(type='button', data-toggle='collapse', data-target='#navbarNav', aria-controls='navbarNav', aria-expanded='false', aria-label='Toggle navigation')
+				span.navbar-toggler-icon
+			#navbarNav.collapse.navbar-collapse
+				ul.navbar-nav.mr-auto
+					if user
+						li.nav-item
+							a.nav-link(href='/stocks/') Stocks
+						li.nav-item
+							a.nav-link(href='#') Marketplace
+						li.nav-item
+							a.nav-link(href='#') Chat
+				ul.navbar-nav
+					if user
+						li.nav-item.active
+							a.nav-link(href='/users/logout') Logout
+					else
+						li.nav-item
+							a.nav-link(href='/users/register') Register
+						li.nav-item
+							a.nav-link(href='/users/login') Login
+
+		block header
+		br
+		.container
+			!= messages('message', locals)
+			//- show all errors
+			if errors
+				each error, i in errors
+					div(class='alert alert-danger') #{error.msg}
+
+
+		block content
+		br
+
+
+		script(src='/bower_components/jquery/dist/jquery.js')
+		script(src='/bower_components/bootstrap/dist/js/bootstrap.js')
+		script(src='/js/main.js')

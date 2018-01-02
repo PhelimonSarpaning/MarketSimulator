@@ -1,0 +1,17 @@
+.jumbotron {
+	display: flex;
+	justify-content: center;
+	align-content: center;
+}
+
+.alert-error {
+	color: #a94442;
+	background-color: #f2dede;
+	border: #edccd1;
+}
+
+.alert-success_msg {
+	color: #3c763d;
+	background-color: #dff0d8;
+	border: #d6e9c6;
+}
