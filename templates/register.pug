@@ -21,4 +21,17 @@ block content
 			.form-group
 				label Confirm Password
 				input.form-control(name='confirmPassword', type='password')
+			br
+			.form-group
+				h5 Terms of Service
+				.alert.alert-info By using this service, you agree to the 
+					a(href='https://iextrading.com/api-exhibit-a/') Terms of Services
+					|  outlined by IEX for its trading data API.
+				.form-check
+					input.form-check-input(name='agreeService', type='radio', value='agree', checked)
+					label.form-check-label I accept the Terms of Services outlined above.
+				.form-check
+					input.form-check-input(name='agreeService', type='radio', value='disagree')
+					label.form-check-label I do not accept the Terms of Services.
+
 			input.btn.btn-primary(type='submit', value='Submit')

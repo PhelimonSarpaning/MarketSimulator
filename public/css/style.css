@@ -1,7 +1,29 @@
+/* Position the body elements under the navbar, which is always 50px */
+body {
+	padding-top: 50px;
+}
+
 .jumbotron {
 	display: flex;
 	justify-content: center;
 	align-content: center;
+}
+
+footer {
+	/* Make sure that the footer is at the bottom of the page */
+	position: relative;
+	bottom: 0;
+	left: 0;
+	background-color: rgba(33,209,146, 0.5);
+	color: rgba(0, 0, 0, 0.6);
+}
+
+footer .IEX-notice .col {
+	margin-top: 1em;
+}
+
+.copyright-notice {
+	font-size: 85%;
 }
 
 .alert-error {

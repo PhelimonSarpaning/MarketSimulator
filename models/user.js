@@ -16,6 +16,9 @@ let userSchema = new mongoose.Schema({
 	email: {
 		type: String,
 		required: true
+	},
+	portfolios: {
+		type: [mongoose.Schema.Types.Mixed]
 	}
 });
 

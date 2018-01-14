@@ -36,6 +36,10 @@ router.post('/register',
 		//use a cutom validator to check that the password values match
 		check('confirmPassword', 'Passwords must match').custom(function(value, {req}) {
 			return value === req.body.password
+		}),
+		// ensure that user accepts TOS
+		check('agreeService', 'Please accept the Terms of Services.').custom(function(value) {
+			return value === 'agree'
 		})
 	], 
 
@@ -55,7 +59,7 @@ router.post('/register',
 		}
 
 		//Check to make sure that the username is unique
-		User.findOne({ username: req.body.username }, function(err, user) {
+		User.findOne({ username: request.username }, function(err, user) {
 			console.log('User: ');
 			console.log(user);
 			if(user) {
@@ -63,11 +67,7 @@ router.post('/register',
 				return res.render('register', request);
 			}
 			//Create a newUser object to create an instance of the User model later
-			var newUser = {
-				name: req.body.name,
-				email: req.body.email,
-				username: req.body.username,
-			}
+			var newUser = request
 
 			//Generate a salt with 10 rounds and hash the password before storing in db
 			bcrypt.hash(req.body.password, 10, function(err, hash) {

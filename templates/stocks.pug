@@ -3,3 +3,22 @@ extends index.pug
 block content
 	.container
 		.alert.alert-info Welcome back, #{user.username}!
+		//- Using flexbox to center the add button
+		.row.d-flex.align-items-center
+			.col-sm-11
+				h1 Your Portfolios
+			.col-sm-1
+				a.btn.btn-warning( href="/stocks/new-portfolio")
+					span.fas.fa-plus.fa-lg
+		br
+	.container
+		each portfolio in user.portfolios
+			.row.d-flex.flex-column
+				.card
+					.card-header.d-inline-flex.flex-row
+						h4.card-title.mr-auto #{portfolio.name}
+						a.btn.btn-info(href='#') Manage
+					.card-block.p-4
+						h5.card-subtitle.mb-2 #{portfolio.description}
+						p.lead Initial Investment Capital: #{portfolio.capital}
+			br

@@ -4,8 +4,9 @@ html
 		title StockMarket
 		link(rel='stylesheet', href='/bower_components/bootstrap/dist/css/bootstrap.css')
 		link(rel='stylesheet', href='/css/style.css')
+		script(defer src="/js/fontawesome-all.js")
 	body
-		nav.navbar.navbar-expand-md.navbar-dark.bg-dark
+		nav.navbar.navbar-expand-md.navbar-dark.bg-dark.fixed-top
 			a.navbar-brand(href='/') StockMarket
 			button.navbar-toggler.navbar-toggler-right(type='button', data-toggle='collapse', data-target='#navbarNav', aria-controls='navbarNav', aria-expanded='false', aria-label='Toggle navigation')
 				span.navbar-toggler-icon
@@ -35,11 +36,40 @@ html
 			//- show all errors
 			if errors
 				each error, i in errors
-					div(class='alert alert-danger') #{error.msg}
+					div(class='alert alert-warning') #{error.msg}
 
 
 		block content
 		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+		br
+
+
+		footer.footer.page-footer
+			.container-fluid
+				.row.IEX-notice
+					.col
+						p.lead Data kindly provided for free by the IEX Developer Platform.
+				.row
+					.col
+						p.lead.copyright-notice &copy; 2017 Copyright: Shoumyo Chakravorti
 
 
 		script(src='/bower_components/jquery/dist/jquery.js')
