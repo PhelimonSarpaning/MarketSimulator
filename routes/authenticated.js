@@ -2,7 +2,6 @@
 function ensureAuthenticated(req, res, next) {
 	if(req.isAuthenticated()) {
 		//If user is logged in, access does not need to be restricted
-		console.log("logged in");
 		next();
 	} else {
 		req.flash('warning', 'Please log in first!');

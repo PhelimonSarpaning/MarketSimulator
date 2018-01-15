@@ -17,7 +17,7 @@ block content
 				.card
 					.card-header.d-inline-flex.flex-row
 						h4.card-title.mr-auto #{portfolio.name}
-						a.btn.btn-info(href='#') Manage
+						a.btn.btn-info(href='/stocks/view-portfolio/' + portfolio.portfolio_id) Manage
 					.card-block.p-4
 						h5.card-subtitle.mb-2 #{portfolio.description}
 						p.lead Initial Investment Capital: #{portfolio.capital}
