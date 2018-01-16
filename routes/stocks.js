@@ -12,19 +12,11 @@ const { check, validationResult } = require('express-validator/check');
 //Bring in the User model
 let User = require('../models/user');
 
+// Base url for making get requests to IEX API
+const baseUrl = 'https://api.iextrading.com/1.0';
+
 router.get('/', ensureAuthenticated, function(req, res) {
 	res.render('stocks');
-
-	const baseUrl = 'https://api.iextrading.com/1.0';
-	const endpoint = '/stock';
-	const ticker = '/aapl';
-	const fetch = '/chart/1d';
-	const fullUrl = baseUrl + endpoint + ticker + fetch
-
-	// request.get(fullUrl, function(err, response, body) {
-	// 	json = JSON.parse(body);
-	// 	console.log(json);
-	// });
 });
 
 // GET Route for creating a new portfolio
@@ -81,6 +73,7 @@ router.post('/new-portfolio', ensureAuthenticated, [
 // GET route to view a single portfolio
 router.get('/view-portfolio/:id', function(req, res) {
 	console.log(req.params.id);
+
 	User.findOne({username: req.user.username},
 		{portfolios: {$elemMatch: {portfolio_id: req.params.id}}, _id: 0},
 		function(err, docs) {
@@ -91,8 +84,16 @@ router.get('/view-portfolio/:id', function(req, res) {
 
 			const portfolio = docs.portfolios[0];
 			console.log(portfolio);
-			return res.render('single-portfolio', {
-				portfolio: portfolio
+
+			// Get available stocks (will work on speeding this up later)
+			const fullUrl = baseUrl + '/ref-data/symbols';
+
+			request.get(fullUrl, function(err, response, body) {
+				var json = JSON.parse(body);
+				return res.render('single-portfolio', {
+					portfolio: portfolio,
+					availableStocks: json
+				});
 			});
 		});
 });

@@ -1,7 +1,61 @@
 extends index.pug
 
 block content
+	link(href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet")
+
 	.container
 		br
-		h1 #{portfolio.name}
-		h3 #{portfolio.description}
+		h3 #{portfolio.name}
+		p.lead #{portfolio.description}
+		br
+		ul.nav.nav-tabs(role='tablist')
+			li.nav-item.mr-2
+				a.nav-link(data-toggle="tab" href="#overview" role="tab") Portfolio Overview
+			li.nav-item.mr-auto
+				a.nav-link(data-toggle="tab" href="#stuff" role="tab") Marketplace
+			li.nav-item
+				a.nav-link(data-toggle="tab" href="#otherstuff" role="tab") Settings
+		br
+		//- Tab contents go here
+		.tab-content
+			#overview.tab-pane.show.active(role='tabpanel')
+				p.lead TODO
+			#stuff.tab-pane(role='tabpanel')
+				ul.nav.nav-pills.justify-content-center
+					li.nav-item.active.mr-3
+						a.nav-link(data-toggle="pill" href="#basic-search" role="tab") Basic Search
+					li.nav-item.mr-3
+						a.nav-link(data-toggle="pill" href="#advanced-search" role="tab") Advanced Search
+
+				br
+				.tab-content.d-flex.justify-content-center
+					#basic-search.tab-pane(role='tabpanel')
+						.col-md-6.ml-10
+							select.multi-select-stock( style='width: 30em;')
+								each stock in availableStocks
+									option(value=stock.symbol) #{stock.symbol}
+					#advanced-search.tab-pane(role='tabpanel')
+						p.lead sasfdsf
+			#otherstuff.tab-pane(role='tabpanel')
+				p.lead TODO
+
+block javascript
+	script(src='/bower_components/select2/dist/js/select2.min.js')
+
+	script.
+		$(document).ready(function() {
+			$('.multi-select-stock').select2();
+
+			$('.multi-select-stock').on('change', function() {
+				console.log('changed');
+				var ticker = this.value;
+				console.log(ticker);
+
+				$.ajax({
+					url: '/indiv-stock/stock-card/' + ticker,
+					method: 'GET'
+				}).done(function(data) {
+					console.log(data);
+				});
+			})
+		})

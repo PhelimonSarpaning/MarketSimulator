@@ -80,6 +80,8 @@ let users = require('./routes/users');
 app.use('/users', users);
 let stocks = require('./routes/stocks');
 app.use('/stocks', stocks);
+let indivStocks = require('./routes/indivStocks');
+app.use('/indiv-stock', indivStocks);
 
 //START SERVER
 app.listen(3000, function() {
