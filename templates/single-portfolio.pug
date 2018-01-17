@@ -19,7 +19,40 @@ block content
 		//- Tab contents go here
 		.tab-content
 			#overview.tab-pane.show.active(role='tabpanel')
-				p.lead TODO
+				#new-section-modal.modal.fade(role="dialog")
+					.modal-dialog(role='document')
+						.modal-content
+							.modal-header
+								h5.modal-title New Section
+								button(type='button' class="close" data-dismiss="modal")
+							.modal-body
+								form(method='POST' action='/stocks/new-section/'+portfolio.portfolio_id)
+									.form-group
+										label.lead Section Name
+										input.form-control(name='sectionName', type='text', placeholder='eg. Blue Chip Stocks or UITs')
+									hr
+									.form-group.d-flex.flex-row-reverse
+										input(type="submit" class="btn btn-success" value='Make Section')
+										button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel
+
+				.d-flex.flex-row.align-items-center
+					h2.mr-auto Investments
+					button.btn.btn-warning(data-toggle='modal' data-target='#new-section-modal')
+						span.fas.fa-plus.fa-lg
+				br
+				if !portfolio.sections || portfolio.sections.length === 0
+					.alert.alert-error It appears this portfolio doesn't have any sections, make a new one to get started!
+				else
+					each section in portfolio.sections
+						.row.d-flex.flex-column
+							.card
+								.card-header.d-inline-flex.flex-row
+									h4.card-title.mr-auto #{section.name}
+									a.btn.btn-info(href='/stocks/view-portfolio/' + portfolio.portfolio_id) Manage
+								.card-block.p-4
+									h5.card-subtitle.mb-2 Holdings
+									p.lead #{section.holdings}
+						br
 			#stuff.tab-pane(role='tabpanel')
 				ul.nav.nav-pills.justify-content-center
 					li.nav-item.active.mr-3
@@ -32,7 +65,7 @@ block content
 					#basic-search.tab-pane(role='tabpanel')
 						.row.mb-4
 							.col-md-6
-								select.select-stock( style='width: 50em;')
+								select.select-stock.form-control( style='width: 50em;')
 									each stock in availableStocks
 										option(value=stock.symbol) #{stock.symbol}
 						.row
@@ -61,9 +94,14 @@ block javascript
 			//- $('.multi-select-stock').select2();
 
 			$('.select-stock').on('change', function() {
-				console.log('changed');
 				var ticker = this.value;
-				console.log(ticker);
+				var port_id = '#{portfolio.portfolio_id}';
+				var portfolio_sections = !{JSON.stringify(portfolio.sections)};
+				var sectionOptions = '';
+				for(var i = 0; i < portfolio_sections.length; i++) {
+					var sectionName = portfolio_sections[i].name;
+					sectionOptions += "<option name='"+ sectionName +"' value=" + i + ">" + sectionName + "</option>";
+				}
 
 				$.ajax({
 					url: '/indiv-stock/stock-card/' + ticker,
@@ -75,10 +113,55 @@ block javascript
 					var stats = data.stats;
 					var chartData = data.chart;
 
+					var maxStocks = Math.trunc('#{portfolio.availableCapital}' / quote.latestPrice);
+
+					var date = new Date();
+					date = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+
+					var buyModal = `
+						<div id='buy-modal' class='modal fade' role="dialog">
+							<div class='modal-dialog' role='document'>
+								<div class='modal-content'>
+									<div class='modal-header'>
+										<h5 class='modal-title'>Purchase Stock</h5>
+										<button type='button' class='close' data-dismiss='modal'></button>
+									</div>
+									<div class='modal-body'>
+										<form method='POST' action='/stocks/purchase-stock/`+port_id+`/`+ticker+`' >
+											<div class='form-group'>
+												<label name='ticker' class='lead'>Ticker: `+ quote.symbol +`</label>
+												<label class='lead'>The price of each share, as of `+ date +` is `+ quote.latestPrice +`</label>
+											</div>
+											<div class='form-group'>
+												<label class='lead'>Section Name</label>
+												<select id='addSection' class='form-control' name='addSection'>
+													`+ sectionOptions +`
+												</select>
+												<br>
+												<label class='lead'>Number of Shares:</label>
+												<input class='form-control' name='numShares' type='number' placeholder='10' min=1 max=`+ maxStocks +`>
+											</div>
+											<hr>
+											<div class='d-flex flex-row-reverse'>
+												<input type="submit" class="btn btn-success" value='Make Purchase'>
+												<button type="button" class="btn btn-secondary mr-3" data-dismiss="modal"> 	Cancel
+												</button>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>`;
+
 					var stockCard = `
 						<div class='card'>
 							<div class='card-header'>
-								<h2 class='card-title'>`+ quote.symbol +`</h3>
+								<div class='d-flex flex-row align-items-center'>
+									<h2 class='card-title mr-auto'>`+ quote.symbol +`</h3>
+									<button class='btn btn-warning' data-toggle='modal' data-target='#buy-modal'>
+										<span class='fas fa-plus fa-lg'></span>
+									</button>
+								</div>
 							</div>
 							<div class='card-block p-4'
 								<p class='lead text-muted'>`+ company.companyName +`</p>
@@ -125,7 +208,7 @@ block javascript
 						</div>
 					`
 
-					$('.card-container').html(stockCard);
+					$('.card-container').html(buyModal + stockCard);
 
 					var chart = AmCharts.makeChart("chartdiv", {
 						"type": "serial",

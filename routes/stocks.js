@@ -48,7 +48,9 @@ router.post('/new-portfolio', ensureAuthenticated, [
 			name: req.body.name,
 			description: req.body.description,
 			capital: req.body.capital,
-			portfolio_id: mongoose.Types.ObjectId().toString() 
+			availableCapital: req.body.capital,
+			portfolio_id: mongoose.Types.ObjectId().toString(),
+			sections: [] 
 		}
 
 		// reload with the errors if there are any, pre-inputting values for convenience
@@ -71,9 +73,7 @@ router.post('/new-portfolio', ensureAuthenticated, [
 })
 
 // GET route to view a single portfolio
-router.get('/view-portfolio/:id', function(req, res) {
-	console.log(req.params.id);
-
+router.get('/view-portfolio/:id', ensureAuthenticated, function(req, res) {
 	User.findOne({username: req.user.username},
 		{portfolios: {$elemMatch: {portfolio_id: req.params.id}}, _id: 0},
 		function(err, docs) {
@@ -83,7 +83,6 @@ router.get('/view-portfolio/:id', function(req, res) {
 			}
 
 			const portfolio = docs.portfolios[0];
-			console.log(portfolio);
 
 			// Get available stocks (will work on speeding this up later)
 			const fullUrl = baseUrl + '/ref-data/symbols';
@@ -98,5 +97,83 @@ router.get('/view-portfolio/:id', function(req, res) {
 		});
 });
 
+// Route for creating a new section within a portfolio, initiated from a modal form
+router.post('/new-section/:id', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.params.id;
+	const sectionName = req.body.sectionName;
+	var newSection = {
+		name: sectionName,
+		section_id: mongoose.Types.ObjectId().toString(),
+		holdings: []
+	};
+
+	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$push : {"portfolios.$.sections": newSection}}, 
+		function(err, doc) {
+			if(err) {
+				req.flash('error', 'We were unable to create this section, please try again later.');
+			}
+			//Reload the page for changes to take place
+			res.redirect('/stocks/view-portfolio/'+portfolio_id);
+		}
+	);
+});
+
+router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, function(req, res) {
+	const ticker = req.params.ticker;
+	const section_id = req.body.addSection;
+	const shares = req.body.numShares;
+	const id = req.params.portfolio_id;
+
+	const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
+	request.get(fullUrl, function(err, response, body) {
+		const quote = JSON.parse(body);
+		const price = quote.latestPrice;
+
+		User.findOne({username: req.user.username}, function(err, userDoc) {
+			if(err || !userDoc) {
+				req.flash('error', 'Yikes, we were unable to load your profile!');
+				res.redirect('/stocks/view-portfolio/' + req.params.portfolio_id);
+			} else if(userDoc.availableCapital < price) {
+				req.flash('error', 'You do not have sufficient capital to purchase this stock.');
+				res.redirect('/stocks/view-portfolio/' + req.params.portfolio_id);
+			} else {
+				const newPurchase = {
+					ticker: ticker,
+					shares: shares,
+					purchasePrice: price,
+					purchaseDate: new Date(),
+					absoluteGain: 0.00,
+					percentGain: 0.00
+				}
+
+				var portfolios = userDoc.portfolios;
+				for(var i = 0; i < portfolios.length; i++) {
+					if(portfolios[i].portfolio_id == id) {
+						var portfolio = portfolios[i];
+						var section = portfolio.sections[section_id];
+						section.holdings.push(newPurchase);
+
+						userDoc.portfolios[i].sections[section_id] = section;
+						console.log(userDoc.portfolios[i].sections[section_id] + "\n\n\n");
+						// Mark the user as being modified before saving, otherwise saving will silently fail
+						userDoc.markModified('portfolios.' + i + '.sections.' + section_id);
+						userDoc.save(function(err, doc) {
+							if(err) {
+								req.flash('error', 'Something went wrong in buying your stocks.');
+							}
+
+							res.redirect('/stocks/view-portfolio/' + req.params.portfolio_id);
+						});
+
+						return;
+					}
+				}
+
+				req.flash('error', 'Something went wrong in buying your stocks.');
+				res.redirect('/stocks/view-portfolio/' + req.params.portfolio_id);
+			}
+		})
+	})
+});
 
 module.exports = router;
