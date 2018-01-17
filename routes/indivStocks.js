@@ -29,46 +29,51 @@ function getCompanyData(ticker) {
 	})
 }
 
-async function getStats(ticker) {
+function getStats(ticker) {
 	const fullUrl = baseUrl + '/stock/' + ticker + '/stats';
 	request.get(fullUrl, function(err, response, body) {
 		return JSON.parse(body);
 	})
 }
 
-async function getAllData(ticker) {
+function getAllData(ticker) {
 	var quote = getQuote(ticker);
 	var company = getCompanyData(ticker);
-	var stats = await(getStats(ticker));
-	console.log(quote);
-	console.log(company);
-	console.log(stats);
+	var stats = getStats(ticker);
 }
 
 router.get('/stock-card/:ticker', function(req, res) {
 	const ticker = req.params.ticker;
-	var quote, company, stats;
+	var quote, company, stats, chart;
 
-	request.get(baseUrl + '/stock/' + ticker + '/quote', function(err, response, body) {
-		quote = JSON.parse(body);
+	request.get(baseUrl + '/stock/' + ticker + '/quote', function(err, response, quoteBody) {
+		quote = JSON.parse(quoteBody);
 
-		request.get(baseUrl + '/stock/' + ticker + '/company', function(err, response, body2) {
-			company = JSON.parse(body2);
+		request.get(baseUrl + '/stock/' + ticker + '/company', function(err, response, companyBody) {
+			company = JSON.parse(companyBody);
 
-			request.get(baseUrl + '/stock/' + ticker + '/stats', function(err, response, body3) {
-				stats = JSON.parse(body3);
+			request.get(baseUrl + '/stock/' + ticker + '/stats', function(err, response, statsBody) {
+				stats = JSON.parse(statsBody);
 
-				data = {
-					quote: quote,
-					company: company,
-					stats: stats
-				};
+				request.get(baseUrl + '/stock/' + ticker + '/chart/3m', function(err, response, chartBody) {
+					chart = JSON.parse(chartBody);
 
-				console.log(quote);
-				console.log(company);
-				console.log(stats);
+					var sanitizedChart = [];
+					for(var i = 0; i < chart.length; i++) {
+						sanitizedChart.push({
+							date: chart[i].date,
+							value: chart[i].close
+						});
+					}
 
-				res.send(data);
+					data = {
+						quote: quote,
+						company: company,
+						stats: stats,
+						chart: sanitizedChart
+					};
+					res.send(data);
+				});
 			});
 		});
 	});

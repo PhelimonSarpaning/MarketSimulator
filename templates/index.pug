@@ -4,6 +4,7 @@ html
 		title StockMarket
 		link(rel='stylesheet', href='/bower_components/bootstrap/dist/css/bootstrap.css')
 		link(rel='stylesheet', href='/css/style.css')
+		link(rel="stylesheet" href="https://www.amcharts.com/lib/3/plugins/export/export.css" type="text/css" media="all")
 		script(defer src="/js/fontawesome-all.js")
 	body
 		nav.navbar.navbar-expand-md.navbar-dark.bg-dark.fixed-top
@@ -75,5 +76,9 @@ html
 		script(src='/bower_components/jquery/dist/jquery.js')
 		script(src='/bower_components/bootstrap/dist/js/bootstrap.js')
 		script(src='/js/main.js')
+		script(src="https://www.amcharts.com/lib/3/amcharts.js")
+		script(src="https://www.amcharts.com/lib/3/serial.js")
+		script(src="https://www.amcharts.com/lib/3/plugins/export/export.min.js")
+		script(src="https://www.amcharts.com/lib/3/themes/light.js")
 
 		block javascript

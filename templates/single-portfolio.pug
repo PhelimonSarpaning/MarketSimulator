@@ -30,12 +30,16 @@ block content
 				br
 				.tab-content.d-flex.justify-content-center
 					#basic-search.tab-pane(role='tabpanel')
-						.col-md-6.ml-10
-							select.multi-select-stock( style='width: 30em;')
-								each stock in availableStocks
-									option(value=stock.symbol) #{stock.symbol}
+						.row.mb-4
+							.col-md-6
+								select.select-stock( style='width: 50em;')
+									each stock in availableStocks
+										option(value=stock.symbol) #{stock.symbol}
+						.row
+							.col-md-12.card-container(style='width=30em;')
+
 					#advanced-search.tab-pane(role='tabpanel')
-						p.lead sasfdsf
+						p.lead something
 			#otherstuff.tab-pane(role='tabpanel')
 				p.lead TODO
 
@@ -43,10 +47,20 @@ block javascript
 	script(src='/bower_components/select2/dist/js/select2.min.js')
 
 	script.
-		$(document).ready(function() {
-			$('.multi-select-stock').select2();
+		function sanitize(data) {
+			return (!data) ? 'N/A' : data;
+		}
 
-			$('.multi-select-stock').on('change', function() {
+		function zoomChart(chart) {
+		    chart.zoomToIndexes(chart.dataProvider.length-30, chart.dataProvider.length - 1);
+		}
+
+		$(document).ready(function() {
+			//Considering not using select2 because multi select is slow anyways, and
+			//single select with select2 is noticeably slower than plain selecter
+			//- $('.multi-select-stock').select2();
+
+			$('.select-stock').on('change', function() {
 				console.log('changed');
 				var ticker = this.value;
 				console.log(ticker);
@@ -56,6 +70,147 @@ block javascript
 					method: 'GET'
 				}).done(function(data) {
 					console.log(data);
+					var quote = data.quote;
+					var company = data.company;
+					var stats = data.stats;
+					var chartData = data.chart;
+
+					var stockCard = `
+						<div class='card'>
+							<div class='card-header'>
+								<h2 class='card-title'>`+ quote.symbol +`</h3>
+							</div>
+							<div class='card-block p-4'
+								<p class='lead text-muted'>`+ company.companyName +`</p>
+								<div id='chartdiv' style='height: 40em; width: 45em;'></div>
+								<p class='lead text-muted'>Stock Data</p>
+								<table class='table table-striped'>
+									<tbody>
+										<tr>
+											<th>Open</th>
+											<td>`+ quote.open +`</td>
+											<th>Market Cap</th>
+											<td>`+ stats.marketcap +`</td>
+											<th>52 Week High</th>
+											<td>`+ quote.week52High +`</td>
+										</tr>
+										<tr>
+											<th>Close</th>
+											<td>`+ quote.close +`</td>
+											<th>P/E Ratio</th>
+											<td>`+ sanitize(quote.peRatio) +`</td>
+											<th>52 Week Low</th>
+											<td>`+ quote.week52Low +`</td>
+										</tr>
+										<tr>
+											<th>High</th>
+											<td>`+ quote.high +`</td>
+											<th>Dividend Yield</th>
+											<td>`+ stats.dividendYield +`</td>
+											<th></th>
+											<td></td>
+										</tr>
+									</tbody>
+								</table>
+								<a class='btn btn-info' data-toggle="collapse" href="#company-info" role="button">More Info</a>
+
+								<div class='card-body collapse' id='company-info' style='width: 40em;'>
+									<p class='lead'>CEO: `+ company.CEO +`</p>
+									<p class='lead'>Industry: `+ company.industry +`</p>
+									<p class='lead'>Sector: `+ company.sector +`</p>
+									<p class='lead'>Description: `+ company.description +`</p>
+									<p class='lead'>Exchange: `+ company.exchange +`</p>
+								</div>
+							</div>
+						</div>
+					`
+
+					$('.card-container').html(stockCard);
+
+					var chart = AmCharts.makeChart("chartdiv", {
+						"type": "serial",
+					    "theme": "light",
+					    "marginRight": 40,
+					    "marginLeft": 40,
+					    "autoMarginOffset": 20,
+					    "mouseWheelZoomEnabled":true,
+					    "dataDateFormat": "YYYY-MM-DD",
+					    "valueAxes": [{
+					        "id": "v1",
+					        "axisAlpha": 0,
+					        "position": "left",
+					        "ignoreAxisWidth":true
+					    }],
+					    "balloon": {
+					        "borderThickness": 1,
+					        "shadowAlpha": 0
+					    },
+					    "graphs": [{
+					        "id": "g1",
+					        "balloon":{
+					          "drop":true,
+					          "adjustBorderColor":false,
+					          "color":"#ffffff"
+					        },
+					        "bullet": "round",
+					        "bulletBorderAlpha": 1,
+					        "bulletColor": "#FFFFFF",
+					        "bulletSize": 5,
+					        "hideBulletsCount": 50,
+					        "lineThickness": 2,
+							"lineColor": "#98FB98",
+							"useNegativeColorIfDown": true,
+							"negativeLineColor": "#FA8072",
+					        "title": "red line",
+					        "useLineColorForBulletBorder": true,
+					        "valueField": "value",
+					        "balloonText": "<span style='font-size:18px;'>[[value]]</span>"
+					    }],
+					    "chartScrollbar": {
+					        "graph": "g1",
+					        "oppositeAxis":false,
+					        "offset":30,
+					        "scrollbarHeight": 80,
+					        "backgroundAlpha": 0,
+					        "selectedBackgroundAlpha": 0.1,
+					        "selectedBackgroundColor": "#888888",
+					        "graphFillAlpha": 0,
+					        "graphLineAlpha": 0.5,
+					        "selectedGraphFillAlpha": 0,
+					        "selectedGraphLineAlpha": 1,
+					        "autoGridCount":true,
+					        "color":"#AAAAAA"
+					    },
+					    "chartCursor": {
+					        "pan": true,
+					        "valueLineEnabled": true,
+					        "valueLineBalloonEnabled": true,
+					        "cursorAlpha":1,
+					        "cursorColor":"#258cbb",
+					        "limitToGraph":"g1",
+					        "valueLineAlpha":0.2,
+					        "valueZoomable":true
+					    },
+					    "valueScrollbar":{
+					      "oppositeAxis":false,
+					      "offset":50,
+					      "scrollbarHeight":10
+					    },
+					    "categoryField": "date",
+					    "categoryAxis": {
+					        "parseDates": true,
+					        "dashLength": 1,
+					        "minorGridEnabled": true
+					    },
+					    "export": {
+					        "enabled": true
+					    },
+					    "dataProvider": chartData
+					});
+
+					chart.addListener("rendered", zoomChart);
+
+					zoomChart(chart);
 				});
 			})
 		})
