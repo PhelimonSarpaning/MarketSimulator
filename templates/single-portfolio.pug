@@ -5,9 +5,9 @@ block content
 
 	.container
 		br
-		h3 #{portfolio.name}
+		h2 #{portfolio.name}
+		h4 Available Capital: #{portfolio.availableCapital}
 		p.lead #{portfolio.description}
-		br
 		ul.nav.nav-tabs(role='tablist')
 			li.nav-item.mr-2
 				a.nav-link(data-toggle="tab" href="#overview" role="tab") Portfolio Overview
@@ -51,7 +51,28 @@ block content
 									a.btn.btn-info(href='/stocks/view-portfolio/' + portfolio.portfolio_id) Manage
 								.card-block.p-4
 									h5.card-subtitle.mb-2 Holdings
-									p.lead #{section.holdings}
+									if !section.holdings || section.holdings.length === 0
+										.alert.alert-error It appears this section doesn't have any holdings, head over to the Marketplace to purchase some stocks!
+									else
+										table.table.table-striped
+											thead
+												tr
+													th(scope='column') Shares
+													th(scope='column') Ticker
+													th(scope='column') Purchase Price
+													th(scope='column') Latest Price
+													th(scope='column') % Gain
+													th(scope='column') Absolute Gain
+											tbody
+												each stock in section.holdings
+													tr
+														td #{stock.shares}
+														td #{stock.ticker}
+														td #{stock.purchasePrice}
+														td --
+														td --
+														td --
+
 						br
 			#stuff.tab-pane(role='tabpanel')
 				ul.nav.nav-pills.justify-content-center

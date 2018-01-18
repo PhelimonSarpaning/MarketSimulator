@@ -152,11 +152,12 @@ router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, functi
 						var portfolio = portfolios[i];
 						var section = portfolio.sections[section_id];
 						section.holdings.push(newPurchase);
+						portfolios[i].availableCapital -= price * shares;
 
 						userDoc.portfolios[i].sections[section_id] = section;
 						console.log(userDoc.portfolios[i].sections[section_id] + "\n\n\n");
 						// Mark the user as being modified before saving, otherwise saving will silently fail
-						userDoc.markModified('portfolios.' + i + '.sections.' + section_id);
+						userDoc.markModified('portfolios.' + i);
 						userDoc.save(function(err, doc) {
 							if(err) {
 								req.flash('error', 'Something went wrong in buying your stocks.');
