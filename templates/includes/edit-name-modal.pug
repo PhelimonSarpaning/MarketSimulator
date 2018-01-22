@@ -1,0 +1,15 @@
+#edit-name.modal.fade(role="dialog")
+	.modal-dialog(role='document')
+		.modal-content
+			.modal-header
+				h5.modal-title Edit Portfolio Name
+				button(type='button' class="close" data-dismiss="modal")
+			.modal-body
+				form(method='POST' action='/stocks/edit-name/'+portfolio.portfolio_id)
+					.form-group
+						label.lead Name
+						input.form-control(name='name', type='text', value=portfolio.name)
+					hr
+					.form-group.d-flex.flex-row-reverse
+						input(type="submit" class="btn btn-success" value='Save Changes')
+						button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel

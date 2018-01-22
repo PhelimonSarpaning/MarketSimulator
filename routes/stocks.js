@@ -118,6 +118,40 @@ router.post('/new-section/:id', ensureAuthenticated, function(req, res) {
 	);
 });
 
+// Route for editing the description of a portfolio, initiated from a modal form
+router.post('/edit-description/:id', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.params.id;
+	const description = req.body.description;
+
+	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$set : {"portfolios.$.description": description}}, 
+		function(err, doc) {
+			if(err) {
+				req.flash('error', 'We were unable to update the description, please try again later.');
+			}
+			//Reload the page for changes to take place
+			req.flash('success', 'The description for this portfolio was successfully edited.')
+			res.redirect('/stocks/view-portfolio/'+portfolio_id);
+		}
+	);
+});
+
+// Route for editing the name of a portfolio, initiated from a modal form
+router.post('/edit-name/:id', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.params.id;
+	const name = req.body.name;
+
+	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$set : {"portfolios.$.name": name}}, 
+		function(err, doc) {
+			if(err) {
+				req.flash('error', 'We were unable to update the name, please try again later.');
+			}
+			//Reload the page for changes to take place
+			req.flash('success', 'The name for this portfolio was successfully edited.')
+			res.redirect('/stocks/view-portfolio/'+portfolio_id);
+		}
+	);
+});
+
 router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, function(req, res) {
 	const ticker = req.params.ticker;
 	const section_id = req.body.addSection;

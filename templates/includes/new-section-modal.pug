@@ -1,0 +1,15 @@
+#new-section-modal.modal.fade(role="dialog")
+	.modal-dialog(role='document')
+		.modal-content
+			.modal-header
+				h5.modal-title New Section
+				button(type='button' class="close" data-dismiss="modal")
+			.modal-body
+				form(method='POST' action='/stocks/new-section/'+portfolio.portfolio_id)
+					.form-group
+						label.lead Section Name
+						input.form-control(name='sectionName', type='text', placeholder='eg. Blue Chip Stocks or UITs')
+					hr
+					.form-group.d-flex.flex-row-reverse
+						input(type="submit" class="btn btn-success" value='Make Section')
+						button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel

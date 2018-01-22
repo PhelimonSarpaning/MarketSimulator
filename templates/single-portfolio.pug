@@ -12,32 +12,18 @@ block content
 			li.nav-item.mr-2
 				a.nav-link(data-toggle="tab" href="#overview" role="tab") Portfolio Overview
 			li.nav-item.mr-auto
-				a.nav-link(data-toggle="tab" href="#stuff" role="tab") Marketplace
+				a.nav-link(data-toggle="tab" href="#marketplace" role="tab") Marketplace
 			li.nav-item
-				a.nav-link(data-toggle="tab" href="#otherstuff" role="tab") Settings
+				a.nav-link(data-toggle="tab" href="#settings" role="tab") Settings
 		br
 		//- Tab contents go here
 		.tab-content
 			#overview.tab-pane.show.active(role='tabpanel')
-				#new-section-modal.modal.fade(role="dialog")
-					.modal-dialog(role='document')
-						.modal-content
-							.modal-header
-								h5.modal-title New Section
-								button(type='button' class="close" data-dismiss="modal")
-							.modal-body
-								form(method='POST' action='/stocks/new-section/'+portfolio.portfolio_id)
-									.form-group
-										label.lead Section Name
-										input.form-control(name='sectionName', type='text', placeholder='eg. Blue Chip Stocks or UITs')
-									hr
-									.form-group.d-flex.flex-row-reverse
-										input(type="submit" class="btn btn-success" value='Make Section')
-										button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel
+				include includes/new-section-modal.pug
 
 				.d-flex.flex-row.align-items-center
-					h2.mr-auto Investments
-					button.btn.btn-warning(data-toggle='modal' data-target='#new-section-modal')
+					h2.mr-4 Investments
+					button.btn.btn-success(data-toggle='modal' data-target='#new-section-modal')
 						span.fas.fa-plus.fa-lg
 				br
 				if !portfolio.sections || portfolio.sections.length === 0
@@ -74,7 +60,7 @@ block content
 														td --
 
 						br
-			#stuff.tab-pane(role='tabpanel')
+			#marketplace.tab-pane(role='tabpanel')
 				ul.nav.nav-pills.justify-content-center
 					li.nav-item.active.mr-3
 						a.nav-link(data-toggle="pill" href="#basic-search" role="tab") Basic Search
@@ -94,8 +80,34 @@ block content
 
 					#advanced-search.tab-pane(role='tabpanel')
 						p.lead something
-			#otherstuff.tab-pane(role='tabpanel')
-				p.lead TODO
+			#settings.tab-pane(role='tabpanel')
+				include includes/edit-description-modal.pug
+				include includes/edit-name-modal.pug
+				include includes/restart-game.pug
+				include includes/delete-game.pug
+
+				h2 Settings
+				br
+				
+				.d-flex.flex-row.align-items-center
+					h4.mr-4 Name:
+					button.btn.btn-primary.btn-sm.mb-2(data-toggle='modal' data-target='#edit-name') Edit
+				p.lead #{portfolio.name}
+				
+				.d-flex.flex-row.align-items-center
+					h4.mr-4 Description:
+					button.btn.btn-primary.btn-sm.mb-2(data-toggle='modal' data-target='#edit-description') Edit
+				p.lead #{portfolio.description}
+				hr
+				br
+				br
+
+				button.btn.btn-primary.btn-lg.mb-4(disabled) DANGER ZONE
+				br
+				button.btn.btn-warning.mb-2(data-toggle='modal' data-target='#restart-game') Restart Game
+				br
+				button.btn.btn-danger(data-toggle='modal' data-target='#delete-game') Delete Game
+
 
 block javascript
 	script(src='/bower_components/select2/dist/js/select2.min.js')
@@ -179,7 +191,7 @@ block javascript
 							<div class='card-header'>
 								<div class='d-flex flex-row align-items-center'>
 									<h2 class='card-title mr-auto'>`+ quote.symbol +`</h3>
-									<button class='btn btn-warning' data-toggle='modal' data-target='#buy-modal'>
+									<button class='btn btn-success' data-toggle='modal' data-target='#buy-modal'>
 										<span class='fas fa-plus fa-lg'></span>
 									</button>
 								</div>

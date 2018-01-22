@@ -1,0 +1,15 @@
+#edit-description.modal.fade(role="dialog")
+	.modal-dialog(role='document')
+		.modal-content
+			.modal-header
+				h5.modal-title Edit Description
+				button(type='button' class="close" data-dismiss="modal")
+			.modal-body
+				form(method='POST' action='/stocks/edit-description/'+portfolio.portfolio_id)
+					.form-group
+						label.lead Description
+						textarea.form-control(name='description', type='text') #{portfolio.description}
+					hr
+					.form-group.d-flex.flex-row-reverse
+						input(type="submit" class="btn btn-success" value='Save Changes')
+						button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel
