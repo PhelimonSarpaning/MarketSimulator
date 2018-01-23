@@ -10,11 +10,11 @@
 					strong This action will erase all progress in this game AND remove it from your list of portfolios. This action will wipe all progress in this portfolio and cannot be undone!
 				p.lead 
 					em You must type in the full portfolio name in order for the delete to be successful.
-				form(method='DELETE' action='/stocks/delete-portfolio/'+portfolio.portfolio_id)
+				form.delete-game-form
 					.form-group
 						label.lead Portfolio Name
-						input.form-control(name='name', type='text', value=portfolio.name)
+						input#delete-game-input-name.form-control(name='name' type='text')
 					hr
 					.form-group.d-flex.flex-row-reverse
-						input(type="submit" class="btn btn-danger" value='DELETE')
+						button#delete-game-button(class="btn btn-danger" port-id=portfolio.portfolio_id, port-name=portfolio.name) DELETE
 						button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel

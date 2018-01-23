@@ -140,7 +140,7 @@ router.post('/edit-name/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	const name = req.body.name;
 
-	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$set : {"portfolios.$.name": name}}, 
+	User.findOne({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, "portfolios.$", 
 		function(err, doc) {
 			if(err) {
 				req.flash('error', 'We were unable to update the name, please try again later.');
@@ -209,6 +209,24 @@ router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, functi
 			}
 		})
 	})
+});
+
+router.delete('/delete-portfolio/:id', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.params.id;
+	const portfolio_name = req.body.name;
+
+	User.findOneAndUpdate({username: req.user.username}, {'$pull': { 'portfolios': {'portfolio_id' : portfolio_id }}}, 
+		function(err, doc) {
+			if(err) {
+				console.log(err);
+				req.flash('error', 'We were unable to delete the portfolio "' + portfolio_name + '". Please try again later.');
+			} else {
+				req.flash('success', 'The portfolio "' + portfolio_name + '" was removed successfully.');	
+			}
+
+			return res.redirect('/stocks/');
+		}
+	);
 });
 
 module.exports = router;
