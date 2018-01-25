@@ -36,9 +36,9 @@ app.set('trust proxy', 1) // trust first proxy
 app.use(session({
 	secret: 'appsecret123',
 	resave: true,
-	saveUninitialized: true //saves a cookie if it is new, regardless of whether it has been modified
-	//cookie: { secure: true } -- causes messages to not show up for some reason
-}));
+	saveUninitialized: true, //saves a cookie if it is new, regardless of whether it has been modified
+	cookie: { secure: false } // causes messages to not show up for some reason
+}))
 
 app.use(require('connect-flash')());
 //This function will effectively set a

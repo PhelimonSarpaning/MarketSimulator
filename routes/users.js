@@ -110,7 +110,7 @@ router.post('/login',
 
 	function(req, res, next) {
 		passport.authenticate('local', { 
-			successRedirect: '/',
+			successRedirect: '/stocks/',
 	        failureRedirect: '/stocks/',
 	        failureFlash: true,
 	        successFlash: true })(req, res, next);

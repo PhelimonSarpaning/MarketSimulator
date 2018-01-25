@@ -102,7 +102,7 @@ block content
 				br
 				br
 
-				button.btn.btn-primary.btn-lg.mb-4(disabled) DANGER ZONE
+				h2 DANGER ZONE
 				br
 				button.btn.btn-warning.mb-2(data-toggle='modal' data-target='#restart-game') Restart Game
 				br
@@ -113,4 +113,223 @@ block javascript
 	script(src='/bower_components/select2/dist/js/select2.min.js')
 	script(src='/bower_components/jquery-validation/dist/jquery.validate.min.js')
 	script(src='/js/main.js')
-	include includes/makeChart.pug
+	
+	script.
+		function sanitize(data) {
+			return (!data) ? 'N/A' : data;
+		}
+
+		function zoomChart(chart) {
+		    chart.zoomToIndexes(chart.dataProvider.length-30, chart.dataProvider.length - 1);
+		}
+
+		$(document).ready(function() {
+			//Considering not using select2 because multi select is slow anyways, and
+			//single select with select2 is noticeably slower than plain selecter
+			//- $('.multi-select-stock').select2();
+
+			$('.select-stock').on('change', function() {
+				var ticker = this.value;
+				var port_id = '#{portfolio.portfolio_id}';
+				// var portfolio_sections = !{JSON.stringify(portfolio.sections)}
+				var portfolio_sections = !{JSON.stringify(portfolio.sections)}
+				var sectionOptions = '';
+				for(var i = 0; i < portfolio_sections.length; i++) {
+					var sectionName = portfolio_sections[i].name;
+					sectionOptions += "<option name='"+ sectionName +"' value=" + i + ">" + sectionName + "</option>";
+				}
+
+				$.ajax({
+					url: '/indiv-stock/stock-card/' + ticker,
+					method: 'GET'
+				}).done(function(data) {
+					console.log(data);
+					var quote = data.quote;
+					var company = data.company;
+					var stats = data.stats;
+					var chartData = data.chart;
+
+					var maxStocks = Math.trunc('#{portfolio.availableCapital}' / quote.latestPrice);
+
+					var date = new Date();
+					date = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+
+					var buyModal = `
+						<div id='buy-modal' class='modal fade' role="dialog">
+							<div class='modal-dialog' role='document'>
+								<div class='modal-content'>
+									<div class='modal-header'>
+										<h5 class='modal-title'>Purchase Stock</h5>
+										<button type='button' class='close' data-dismiss='modal'></button>
+									</div>
+									<div class='modal-body'>
+										<form method='POST' action='/stocks/purchase-stock/`+port_id+`/`+ticker+`' >
+											<div class='form-group'>
+												<label name='ticker' class='lead'>Ticker: `+ quote.symbol +`</label>
+												<label class='lead'>The price of each share, as of `+ date +` is `+ quote.latestPrice +`</label>
+											</div>
+											<div class='form-group'>
+												<label class='lead'>Section Name</label>
+												<select id='addSection' class='form-control' name='addSection'>
+													`+ sectionOptions +`
+												</select>
+												<br>
+												<label class='lead'>Number of Shares:</label>
+												<input class='form-control' name='numShares' type='number' placeholder='10' min=1 max=`+ maxStocks +`>
+											</div>
+											<hr>
+											<div class='d-flex flex-row-reverse'>
+												<input type="submit" class="btn btn-success" value='Make Purchase'>
+												<button type="button" class="btn btn-secondary mr-3" data-dismiss="modal"> 	Cancel
+												</button>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>`;
+
+					var stockCard = `
+						<div class='card'>
+							<div class='card-header'>
+								<div class='d-flex flex-row align-items-center'>
+									<h2 class='card-title mr-auto'>`+ quote.symbol +`</h3>
+									<button class='btn btn-success' data-toggle='modal' data-target='#buy-modal'>
+										<span class='fas fa-plus fa-lg'></span>
+									</button>
+								</div>
+							</div>
+							<div class='card-block p-4'
+								<p class='lead text-muted'>`+ company.companyName +`</p>
+								<div id='chartdiv' style='height: 40em; width: 45em;'></div>
+								<p class='lead text-muted'>Stock Data</p>
+								<table class='table table-striped'>
+									<tbody>
+										<tr>
+											<th>Open</th>
+											<td>`+ quote.open +`</td>
+											<th>Market Cap</th>
+											<td>`+ stats.marketcap +`</td>
+											<th>52 Week High</th>
+											<td>`+ quote.week52High +`</td>
+										</tr>
+										<tr>
+											<th>Close</th>
+											<td>`+ quote.close +`</td>
+											<th>P/E Ratio</th>
+											<td>`+ sanitize(quote.peRatio) +`</td>
+											<th>52 Week Low</th>
+											<td>`+ quote.week52Low +`</td>
+										</tr>
+										<tr>
+											<th>High</th>
+											<td>`+ quote.high +`</td>
+											<th>Dividend Yield</th>
+											<td>`+ stats.dividendYield +`</td>
+											<th></th>
+											<td></td>
+										</tr>
+									</tbody>
+								</table>
+								<a class='btn btn-info' data-toggle="collapse" href="#company-info" role="button">More Info</a>
+
+								<div class='card-body collapse' id='company-info' style='width: 40em;'>
+									<p class='lead'>CEO: `+ company.CEO +`</p>
+									<p class='lead'>Industry: `+ company.industry +`</p>
+									<p class='lead'>Sector: `+ company.sector +`</p>
+									<p class='lead'>Description: `+ company.description +`</p>
+									<p class='lead'>Exchange: `+ company.exchange +`</p>
+								</div>
+							</div>
+						</div>
+					`
+
+					$('.card-container').html(buyModal + stockCard);
+
+					var chart = AmCharts.makeChart("chartdiv", {
+						"type": "serial",
+					    "theme": "light",
+					    "marginRight": 40,
+					    "marginLeft": 40,
+					    "autoMarginOffset": 20,
+					    "mouseWheelZoomEnabled":true,
+					    "dataDateFormat": "YYYY-MM-DD",
+					    "valueAxes": [{
+					        "id": "v1",
+					        "axisAlpha": 0,
+					        "position": "left",
+					        "ignoreAxisWidth":true
+					    }],
+					    "balloon": {
+					        "borderThickness": 1,
+					        "shadowAlpha": 0
+					    },
+					    "graphs": [{
+					        "id": "g1",
+					        "balloon":{
+					          "drop":true,
+					          "adjustBorderColor":false,
+					          "color":"#ffffff"
+					        },
+					        "bullet": "round",
+					        "bulletBorderAlpha": 1,
+					        "bulletColor": "#FFFFFF",
+					        "bulletSize": 5,
+					        "hideBulletsCount": 50,
+					        "lineThickness": 2,
+							"lineColor": "#98FB98",
+							"useNegativeColorIfDown": true,
+							"negativeLineColor": "#FA8072",
+					        "title": "red line",
+					        "useLineColorForBulletBorder": true,
+					        "valueField": "value",
+					        "balloonText": "<span style='font-size:18px;'>[[value]]</span>"
+					    }],
+					    "chartScrollbar": {
+					        "graph": "g1",
+					        "oppositeAxis":false,
+					        "offset":30,
+					        "scrollbarHeight": 80,
+					        "backgroundAlpha": 0,
+					        "selectedBackgroundAlpha": 0.1,
+					        "selectedBackgroundColor": "#888888",
+					        "graphFillAlpha": 0,
+					        "graphLineAlpha": 0.5,
+					        "selectedGraphFillAlpha": 0,
+					        "selectedGraphLineAlpha": 1,
+					        "autoGridCount":true,
+					        "color":"#AAAAAA"
+					    },
+					    "chartCursor": {
+					        "pan": true,
+					        "valueLineEnabled": true,
+					        "valueLineBalloonEnabled": true,
+					        "cursorAlpha":1,
+					        "cursorColor":"#258cbb",
+					        "limitToGraph":"g1",
+					        "valueLineAlpha":0.2,
+					        "valueZoomable":true
+					    },
+					    "valueScrollbar":{
+					      "oppositeAxis":false,
+					      "offset":50,
+					      "scrollbarHeight":10
+					    },
+					    "categoryField": "date",
+					    "categoryAxis": {
+					        "parseDates": true,
+					        "dashLength": 1,
+					        "minorGridEnabled": true
+					    },
+					    "export": {
+					        "enabled": true
+					    },
+					    "dataProvider": chartData
+					});
+
+					chart.addListener("rendered", zoomChart);
+
+					zoomChart(chart);
+				});
+			})
+		})

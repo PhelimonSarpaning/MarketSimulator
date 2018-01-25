@@ -4,7 +4,7 @@ const passport = require('passport');
 const ensureAuthenticated = require('./authenticated');
 //request module for making get requests to IEX
 const request = require('request');
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');
 
 //Express validator middleware
 const { check, validationResult } = require('express-validator/check');
@@ -37,7 +37,7 @@ router.post('/new-portfolio', ensureAuthenticated, [
 			.trim()
 			.isLength({min: 1})
 
-	], 
+	],
 
 	function(req, res) {
 		// First check for any validation errors
@@ -50,7 +50,7 @@ router.post('/new-portfolio', ensureAuthenticated, [
 			capital: req.body.capital,
 			availableCapital: req.body.capital,
 			portfolio_id: mongoose.Types.ObjectId().toString(),
-			sections: [] 
+			sections: []
 		}
 
 		// reload with the errors if there are any, pre-inputting values for convenience
@@ -107,7 +107,7 @@ router.post('/new-section/:id', ensureAuthenticated, function(req, res) {
 		holdings: []
 	};
 
-	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$push : {"portfolios.$.sections": newSection}}, 
+	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$push : {"portfolios.$.sections": newSection}},
 		function(err, doc) {
 			if(err) {
 				req.flash('error', 'We were unable to create this section, please try again later.');
@@ -123,7 +123,7 @@ router.post('/edit-description/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	const description = req.body.description;
 
-	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$set : {"portfolios.$.description": description}}, 
+	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, {$set : {"portfolios.$.description": description}},
 		function(err, doc) {
 			if(err) {
 				req.flash('error', 'We were unable to update the description, please try again later.');
@@ -140,7 +140,7 @@ router.post('/edit-name/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	const name = req.body.name;
 
-	User.findOne({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, "portfolios.$", 
+	User.findOne({username: req.user.username, "portfolios.portfolio_id": portfolio_id}, "portfolios.$",
 		function(err, doc) {
 			if(err) {
 				req.flash('error', 'We were unable to update the name, please try again later.');
@@ -215,16 +215,35 @@ router.delete('/delete-portfolio/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	const portfolio_name = req.body.name;
 
-	User.findOneAndUpdate({username: req.user.username}, {'$pull': { 'portfolios': {'portfolio_id' : portfolio_id }}}, 
+	User.findOneAndUpdate({username: req.user.username}, {'$pull': { 'portfolios': {'portfolio_id' : portfolio_id }}},
 		function(err, doc) {
 			if(err) {
 				console.log(err);
 				req.flash('error', 'We were unable to delete the portfolio "' + portfolio_name + '". Please try again later.');
 			} else {
-				req.flash('success', 'The portfolio "' + portfolio_name + '" was removed successfully.');	
+				req.flash('success', 'The portfolio "' + portfolio_name + '" was removed successfully.');
 			}
 
 			return res.redirect('/stocks/');
+		}
+	);
+});
+
+router.post('/restart-portfolio/:id', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.params.id;
+	const portfolio_name = req.body.name;
+	const init_capital = req.body.initCapital;
+
+	User.findOneAndUpdate({username: req.user.username, "portfolios.portfolio_id" : portfolio_id}, {'$set': { 'portfolios.$.availableCapital': init_capital, 'portfolios.$.sections': []}},
+		function(err, doc) {
+			if(err) {
+				console.log(err);
+				req.flash('error', 'We were unable to restart the portfolio "' + portfolio_name + '". Please try again later.');
+			} else {
+				req.flash('success', 'The portfolio "' + portfolio_name + '" was restarted successfully.');
+			}
+
+			return res.redirect('/stocks/view-portfolio/' + portfolio_id);
 		}
 	);
 });
