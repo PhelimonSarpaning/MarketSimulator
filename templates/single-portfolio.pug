@@ -62,10 +62,16 @@ block content
 														td
 															.dropdown.show
 																a.btn.btn-secondary.dropdown-toggle(href="https://example.com" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false")
+																
 																.dropdown-menu.dropdown-menu-right(aria-labelledby="dropdownMenuLink")
-																	a.dropdown-item(href="#") Sell All
+																	form.form(method="POST" action="/stocks/sell-all/")
+																		input(type="hidden" id="portId" name="portId" value=portfolio.portfolio_id)
+																		input(type="hidden" id="sectionId" name="sectionId" value=section.section_id)
+																		input(type="hidden" id="stockTicker" name="stockTicker" value=stock.ticker)
+																		button.dropdown-item(type="submit" value="Submit") Sell All
+																	
 																	a.dropdown-item(href="#") Buy More
-																	a.dropdown-item(href="#") Stock Performance
+																	button.dropdown-item.performance-checker(ticker=stock.ticker) Stock Performance
 
 						br
 			#marketplace.tab-pane(role='tabpanel')
@@ -120,7 +126,8 @@ block content
 block javascript
 	script(src='/bower_components/select2/dist/js/select2.min.js')
 	script(src='/bower_components/jquery-validation/dist/jquery.validate.min.js')
-	script(src='/js/main.js')
+	script(src='/js/settings.js')
+	script(src='/js/stockPerformance.js')
 	
 	script.
 		function sanitize(data) {
@@ -330,7 +337,7 @@ block javascript
 					        "minorGridEnabled": true
 					    },
 					    "export": {
-					        "enabled": true
+					        "enabled": false
 					    },
 					    "dataProvider": chartData
 					});
