@@ -55,7 +55,7 @@ $(document).ready(function() {
 		errorPlacement: function ( error, element ) {
 			// Add the `help-block` class to the error element
 			error.addClass( "alert alert-danger mt-3" );
-			$('.input-parent').append(error);
+			$('.delete-input-parent').append(error);
 		},
 		highlight: function ( element, errorClass, validClass ) {
 			$( element ).parents( ".col-sm-5" ).addClass( "has-error" ).removeClass( "has-success" );
@@ -120,7 +120,7 @@ $(document).ready(function() {
 		errorPlacement: function ( error, element ) {
 			// Add the `help-block` class to the error element
 			error.addClass( "alert alert-danger mt-3" );
-			$('.input-parent').append(error);
+			$('.restart-input-parent').append(error);
 		},
 		highlight: function ( element, errorClass, validClass ) {
 			$( element ).parents( ".col-sm-5" ).addClass( "has-error" ).removeClass( "has-success" );

@@ -4,7 +4,7 @@ html
 		title StockMarket
 		link(rel='stylesheet', href='/bower_components/bootstrap/dist/css/bootstrap.css')
 		link(rel='stylesheet', href='/css/style.css')
-		link(rel="stylesheet" href="https://www.amcharts.com/lib/3/plugins/export/export.css" type="text/css" media="all")
+		//- link(rel="stylesheet" href="https://www.amcharts.com/lib/3/plugins/export/export.css" type="text/css" media="all")
 		script(defer src="/js/fontawesome-all.js")
 	body
 		nav.navbar.navbar-expand-md.navbar-dark.bg-dark.fixed-top
@@ -70,13 +70,15 @@ html
 						p.lead Data kindly provided for free by the IEX Developer Platform.
 				.row
 					.col
-						p.lead.copyright-notice &copy; 2017 Copyright: Shoumyo Chakravorti
-
-
+						p.lead.copyright-notice &copy; 2017 Copyright: Shoumyo Chakravort
+		
+		
+		script(src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js')
 		script(src='/bower_components/jquery/dist/jquery.min.js')
 		script(src='/bower_components/bootstrap/dist/js/bootstrap.min.js')
 		script(src='/bower_components/jquery-validation/dist/jquery.validate.min.js')
 		script(src='/js/main.js')
+		
 		script(src="https://www.amcharts.com/lib/3/amcharts.js")
 		script(src="https://www.amcharts.com/lib/3/serial.js")
 		script(src="https://www.amcharts.com/lib/3/plugins/export/export.min.js")

@@ -49,6 +49,7 @@ block content
 													th(scope='column') Latest Price
 													th(scope='column') % Gain
 													th(scope='column') Absolute Gain
+													th(scope='column') Actions
 											tbody
 												each stock in section.holdings
 													tr
@@ -58,6 +59,13 @@ block content
 														td --
 														td --
 														td --
+														td
+															.dropdown.show
+																a.btn.btn-secondary.dropdown-toggle(href="https://example.com" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false")
+																.dropdown-menu.dropdown-menu-right(aria-labelledby="dropdownMenuLink")
+																	a.dropdown-item(href="#") Sell All
+																	a.dropdown-item(href="#") Buy More
+																	a.dropdown-item(href="#") Stock Performance
 
 						br
 			#marketplace.tab-pane(role='tabpanel')

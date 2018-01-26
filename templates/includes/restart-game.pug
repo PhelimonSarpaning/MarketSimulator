@@ -11,12 +11,11 @@
 				p.lead 
 					em You must type in the full portfolio name in order for the delete to be successful.
 				form.restart-game-form
-					.form-group.input-parent
+					.form-group.restart-input-parent
 						label.lead Portfolio Name
 						input#restart-game-input-name.form-control(name='name' type='text')
 						input(type="hidden" id="portName" name="portName" value=portfolio.name)
 						br
-					hrz
 					.form-group.d-flex.flex-row-reverse
 						button#restart-game-button(class="btn btn-danger" port-id=portfolio.portfolio_id, port-name=portfolio.name, init-capital=portfolio.capital) RESTART
 						button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel
