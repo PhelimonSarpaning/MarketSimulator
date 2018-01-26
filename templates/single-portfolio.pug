@@ -51,12 +51,14 @@ block content
 													th(scope='column') Absolute Gain
 													th(scope='column') Actions
 											tbody
+												//- sectionId is used to keep track of the section index
+												- var sectionId = 0
 												each stock in section.holdings
 													tr
 														td #{stock.shares}
 														td #{stock.ticker}
 														td #{stock.purchasePrice}
-														td --
+														td #{stock.lastPrice}
 														td --
 														td --
 														td
@@ -66,12 +68,13 @@ block content
 																.dropdown-menu.dropdown-menu-right(aria-labelledby="dropdownMenuLink")
 																	form.form(method="POST" action="/stocks/sell-all/")
 																		input(type="hidden" id="portId" name="portId" value=portfolio.portfolio_id)
-																		input(type="hidden" id="sectionId" name="sectionId" value=section.section_id)
+																		input(type="hidden" id="sectionId" name="sectionId" value=sectionId)
 																		input(type="hidden" id="stockTicker" name="stockTicker" value=stock.ticker)
-																		button.dropdown-item(type="submit" value="Submit") Sell All
+																		button.dropdown-item(type="submit") Sell All
 																	
 																	a.dropdown-item(href="#") Buy More
 																	button.dropdown-item.performance-checker(ticker=stock.ticker) Stock Performance
+													- sectionId = sectionId + 1
 
 						br
 			#marketplace.tab-pane(role='tabpanel')

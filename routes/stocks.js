@@ -175,11 +175,14 @@ router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, functi
 					ticker: ticker,
 					shares: shares,
 					purchasePrice: price,
+					lastPrice: price,
 					purchaseDate: new Date(),
 					absoluteGain: 0.00,
 					percentGain: 0.00
 				}
 
+        // Had to update portfolios this way (and not with the findOneAndUpdate
+				// function) because nested arrays are difficult to manipulate otherwise.
 				var portfolios = userDoc.portfolios;
 				for(var i = 0; i < portfolios.length; i++) {
 					if(portfolios[i].portfolio_id == id) {
@@ -246,6 +249,59 @@ router.post('/restart-portfolio/:id', ensureAuthenticated, function(req, res) {
 			return res.redirect('/stocks/view-portfolio/' + portfolio_id);
 		}
 	);
+});
+
+router.post('/sell-all/', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.body.portId;
+	const section_id = req.body.sectionId;
+	const ticker = req.body.stockTicker;
+
+	User.findOne({username: req.user.username}, function(err, user) {
+		if(err) {
+			console.log(err);
+			req.flash('We were unable to sell your shares in ' + ticker + '. Please try again later.')
+		}
+
+		var portfolios = user.portfolios;
+		var sellPrice = 0;
+		var modifiedMarker = '';
+		for(var i = 0; i < portfolios.length; i++) {
+			if(portfolios[i].portfolio_id === portfolio_id) {
+				var portfolio = portfolios[i];
+
+				var section = portfolio.sections[section_id];
+				for(var j = 0; j < section.holdings.length; j++) {
+					if(section.holdings[j].ticker === ticker) {
+						var stock = section.holdings[j];
+						sellPrice = stock.lastPrice * stock.shares;
+						section.holdings.splice(j, 1);
+
+						modifiedMarker = 'portfolios.' + i + '.sections.' + section_id;
+						break;
+					}
+				}
+				portfolio.availableCapital = portfolio.availableCapital + sellPrice;
+				portfolio.sections[section_id] = section;
+				portfolios[i] = portfolio;
+
+				user.markModified(modifiedMarker);
+				user.markModified('portfolios.' + i + '.availableCapital');
+				user.save(function(err, user) {
+					if(err) {
+						console.log(err);
+						req.flash('error', 'Something went wrong in buying your stocks.');
+					}
+
+					res.redirect('/stocks/view-portfolio/' + portfolio_id);
+				})
+
+				return;
+			}
+		}
+
+		req.flash('error', 'Something went wrong in buying your stocks.');
+		res.redirect('/stocks/view-portfolio/' + portfolio_id);
+	});
 });
 
 module.exports = router;
