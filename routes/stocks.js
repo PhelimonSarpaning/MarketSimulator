@@ -155,7 +155,7 @@ router.post('/edit-name/:id', ensureAuthenticated, function(req, res) {
 router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, function(req, res) {
 	const ticker = req.params.ticker;
 	const section_id = req.body.addSection;
-	const shares = req.body.numShares;
+	const shares = parseInt(req.body.numShares);
 	const id = req.params.portfolio_id;
 
 	const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
@@ -261,47 +261,120 @@ router.post('/sell-all/', ensureAuthenticated, function(req, res) {
 			console.log(err);
 			req.flash('We were unable to sell your shares in ' + ticker + '. Please try again later.')
 		}
+		else {
+			var portfolios = user.portfolios;
+			var sellPrice = 0;
+			var modifiedMarker = '';
+			for(var i = 0; i < portfolios.length; i++) {
+				if(portfolios[i].portfolio_id === portfolio_id) {
+					var portfolio = portfolios[i];
 
-		var portfolios = user.portfolios;
-		var sellPrice = 0;
-		var modifiedMarker = '';
-		for(var i = 0; i < portfolios.length; i++) {
-			if(portfolios[i].portfolio_id === portfolio_id) {
-				var portfolio = portfolios[i];
+					var section = portfolio.sections[section_id];
+					for(var j = 0; j < section.holdings.length; j++) {
+						if(section.holdings[j].ticker === ticker) {
+							var stock = section.holdings[j];
+							sellPrice = stock.lastPrice * stock.shares;
+							section.holdings.splice(j, 1);
 
-				var section = portfolio.sections[section_id];
-				for(var j = 0; j < section.holdings.length; j++) {
-					if(section.holdings[j].ticker === ticker) {
-						var stock = section.holdings[j];
-						sellPrice = stock.lastPrice * stock.shares;
-						section.holdings.splice(j, 1);
-
-						modifiedMarker = 'portfolios.' + i + '.sections.' + section_id;
-						break;
+							modifiedMarker = 'portfolios.' + i + '.sections.' + section_id;
+							break;
+						}
 					}
+					portfolio.availableCapital = portfolio.availableCapital + sellPrice;
+					portfolio.sections[section_id] = section;
+					portfolios[i] = portfolio;
+
+					user.markModified(modifiedMarker);
+					user.markModified('portfolios.' + i + '.availableCapital');
+					user.save(function(err, user) {
+						if(err) {
+							console.log(err);
+							req.flash('error', 'Something went wrong in buying your stocks.');
+						}
+
+						res.redirect('/stocks/view-portfolio/' + portfolio_id);
+					})
+
+					return;
 				}
-				portfolio.availableCapital = portfolio.availableCapital + sellPrice;
-				portfolio.sections[section_id] = section;
-				portfolios[i] = portfolio;
-
-				user.markModified(modifiedMarker);
-				user.markModified('portfolios.' + i + '.availableCapital');
-				user.save(function(err, user) {
-					if(err) {
-						console.log(err);
-						req.flash('error', 'Something went wrong in buying your stocks.');
-					}
-
-					res.redirect('/stocks/view-portfolio/' + portfolio_id);
-				})
-
-				return;
 			}
 		}
 
 		req.flash('error', 'Something went wrong in buying your stocks.');
 		res.redirect('/stocks/view-portfolio/' + portfolio_id);
 	});
+});
+
+router.post('/buy-more/', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.body.portId;
+	const section_number = parseInt(req.body.selectSection);
+	const ticker = req.body.selectTicker;
+	const shares = parseInt(req.body.numShares);
+	var setHeaders = false;
+
+	User.findOne({username: req.user.username}, function(err, user) {
+			if(err || !user || !user.portfolios) {
+				console.log(err);
+				req.flash('error','Sorry, we were unable to purchase your stocks. Please try again later.');
+			} else {
+        // We only projected the portfolio necessary, so it should be the first one
+				var portfolios = user.portfolios;
+
+				for(var portfolioCount = 0; portfolioCount < portfolios.length; portfolioCount++) {
+					if(portfolios[portfolioCount].portfolio_id === portfolio_id) {
+						var portfolio = portfolios[portfolioCount];
+						var holdings = portfolio.sections[section_number].holdings;
+
+	        	// Find the stock holding an purchase more stocks
+						for(var counter = 0; counter < holdings.length; counter++) {
+							if(holdings[counter].ticker === ticker) {
+								// Get the quote for the stock
+								const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
+								request.get(fullUrl, function(err, response, body) {
+									var quote = JSON.parse(body);
+
+									// Caluculate the total price and whether or not the user can buy it
+									const totalPrice = quote.latestPrice * shares;
+									if(totalPrice > portfolio.availableCapital) {
+										req.flash('You do not have enough capital to purchase these many shares. \
+											Please try again with fewer shares.')
+									} else {
+										holdings[counter].shares += shares;
+										portfolio.availableCapital -= totalPrice;
+										portfolio.sections[section_number].holdings = holdings;
+										user.portfolios[portfolioCount] = portfolio;
+
+										user.markModified('portfolios.' + portfolioCount
+											+ '.availableCapital');
+										user.markModified('portfolios.' + portfolioCount
+											+ '.sections.' + section_number + '.holdings.'
+											+ counter);
+
+										user.save(function(err, doc) {
+											if(err) {
+												req.flash('error', 'There was an error in saving your transaction.')
+											} else {
+												req.flash('success', 'Your purchase was successful.');
+											}
+
+											if(!setHeaders) {
+												return res.redirect('/stocks/view-portfolio/' + portfolio_id); //just to be safe
+												setHeaders = true;
+											}
+										});
+									}
+								});
+
+								// Return so that the loop does not continue at the headers of
+								// res do not get reset after it is sent
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	)
 });
 
 module.exports = router;

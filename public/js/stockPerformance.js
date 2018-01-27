@@ -12,9 +12,9 @@ $(document).ready(function() {
       // Preselect the ticker in the select dropdown
       $('#marketplace .nav-pills a[href="#basic-search"]').tab('show');
 
-      var selector = $('.select-stock');
-      selector.val(ticker);
-      selector.trigger('change');
+      var stockSelector = $('.select-stock');
+      stockSelector.val(ticker);
+      stockSelector.trigger('change');
   });
 
 });

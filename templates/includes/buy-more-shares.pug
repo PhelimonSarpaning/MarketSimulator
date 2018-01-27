@@ -1,0 +1,34 @@
+#buy-more-shares-modal.modal.fade(role="dialog")
+	.modal-dialog(role='document')
+		.modal-content
+			.modal-header
+				h5.modal-title Buy More Shares
+				button(type='button' class="close" data-dismiss="modal")
+			.modal-body
+				p.lead You can buy additional shares of stocks you have already purchased. Simply select the section, ticker, and number of extra shares you'd like.
+				form.buy-more-shares-form(method='POST' action='/stocks/buy-more/')
+					.form-group
+						label.lead Section Name
+						select.form-control(name='selectSection')
+							- var sectionId = 0
+							each section in portfolio.sections
+								option(value=sectionId) #{section.name}
+								- sectionId++
+						input(type="hidden" id="portId" name="portId" value=portfolio.portfolio_id)
+					.form-group
+						label.lead Ticker
+						select.form-control(name='selectTicker')
+					.form-group
+						label.lead The current price of this stock is:
+						br
+						label.lead(name='stock-price')
+						br
+						label.lead Maximum shares of this stock you can purchase:
+						br
+						label.lead(name='max-shares')
+					.form-group
+						label.lead Shares
+						input.form-control(name='numShares' type='number' max=1 min=0)
+					.form-group.d-flex.flex-row-reverse
+						button(class="btn btn-success") Buy Shares
+						button(type="button" class="btn btn-secondary mr-3" data-dismiss="modal") Cancel

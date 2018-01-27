@@ -20,6 +20,7 @@ block content
 		.tab-content
 			#overview.tab-pane.show.active(role='tabpanel')
 				include includes/new-section-modal.pug
+				include includes/buy-more-shares.pug
 
 				.d-flex.flex-row.align-items-center
 					h2.mr-4 Investments
@@ -29,6 +30,9 @@ block content
 				if !portfolio.sections || portfolio.sections.length === 0
 					.alert.alert-error It appears this portfolio doesn't have any sections, make a new one to get started!
 				else
+					
+					//- sectionId is used to keep track of the section index
+					- var sectionId = 0
 					each section in portfolio.sections
 						.row.d-flex.flex-column
 							.card
@@ -51,8 +55,6 @@ block content
 													th(scope='column') Absolute Gain
 													th(scope='column') Actions
 											tbody
-												//- sectionId is used to keep track of the section index
-												- var sectionId = 0
 												each stock in section.holdings
 													tr
 														td #{stock.shares}
@@ -72,9 +74,9 @@ block content
 																		input(type="hidden" id="stockTicker" name="stockTicker" value=stock.ticker)
 																		button.dropdown-item(type="submit") Sell All
 																	
-																	a.dropdown-item(href="#") Buy More
+																	button.dropdown-item(data-toggle='modal' data-target='#buy-more-shares-modal') Buy More
 																	button.dropdown-item.performance-checker(ticker=stock.ticker) Stock Performance
-													- sectionId = sectionId + 1
+						- sectionId++
 
 						br
 			#marketplace.tab-pane(role='tabpanel')
@@ -131,6 +133,62 @@ block javascript
 	script(src='/bower_components/jquery-validation/dist/jquery.validate.min.js')
 	script(src='/js/settings.js')
 	script(src='/js/stockPerformance.js')
+	//- script(src='/js/buyMore.js')
+	
+	
+	script.
+		var portfolio_sections = null;
+		var sectionSelector = $('#buy-more-shares-modal select[name="selectSection"]');
+		var tickerSelector = $('#buy-more-shares-modal select[name="selectTicker"]');
+		var stockPriceLabel = $('#buy-more-shares-modal label[name="stock-price"]');
+		var maxSharesLabel = $('#buy-more-shares-modal label[name="max-shares"');
+		var numSharesInput = $('#buy-more-shares-modal input[name="numShares"]');
+	
+		$(document).ready(function() {
+			// Update the available tickers
+			sectionSelector.on('change', function() {
+				var sectionId = $(this).val();
+				if(portfolio_sections == null)
+					portfolio_sections = !{JSON.stringify(portfolio.sections)}
+				var section = portfolio_sections[sectionId]
+
+				tickerSelector.empty();
+				var stocks = [];
+				for(var i = 0; i < section.holdings.length; i++) {
+					var ticker = section.holdings[i].ticker
+					stocks.push(ticker);
+					tickerSelector.append(
+						$('<option></option>')
+						.attr('value', ticker)
+						.text(ticker) )
+				}
+				
+				tickerSelector.trigger('change');
+			});
+			
+			tickerSelector.on('change', function() {
+				if(portfolio_sections == null)
+					portfolio_sections = !{JSON.stringify(portfolio.sections)}
+					
+				var ticker = $(this).val()
+				var url = 'https://api.iextrading.com/1.0/stock/' + ticker + '/quote';
+				$.ajax({
+					url: url,
+					method: 'get'
+				}).done(function(data) {
+					var maxStocks = Math.trunc('#{portfolio.availableCapital}' / data.latestPrice);
+					console.log(maxStocks);
+					
+					stockPriceLabel.text(data.latestPrice);
+					maxSharesLabel.text(maxStocks);
+					numSharesInput.attr('max', maxStocks);
+				});
+			});
+			
+			// Set up the information for the first stock
+			sectionSelector.trigger('change');
+			tickerSelector.trigger('change');
+		});
 	
 	script.
 		function sanitize(data) {
@@ -149,7 +207,6 @@ block javascript
 			$('.select-stock').on('change', function() {
 				var ticker = this.value;
 				var port_id = '#{portfolio.portfolio_id}';
-				// var portfolio_sections = !{JSON.stringify(portfolio.sections)}
 				var portfolio_sections = !{JSON.stringify(portfolio.sections)}
 				var sectionOptions = '';
 				for(var i = 0; i < portfolio_sections.length; i++) {
