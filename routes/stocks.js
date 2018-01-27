@@ -89,9 +89,18 @@ router.get('/view-portfolio/:id', ensureAuthenticated, function(req, res) {
 
 			request.get(fullUrl, function(err, response, body) {
 				var json = JSON.parse(body);
+
+				//Preprocess the innerHTML for ticker selector to prevent UI freeze
+				var currSymbol;
+				var symbols = '';
+				for(var i = 0; i < json.length; i++) {
+					currSymbol = json[i].symbol;
+					symbols += '<option value="' + currSymbol + '">' + currSymbol + '</option>';
+				}
+
 				return res.render('single-portfolio', {
 					portfolio: portfolio,
-					availableStocks: json
+					availableStocks: symbols
 				});
 			});
 		});

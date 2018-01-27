@@ -6,7 +6,11 @@ block content
 	.container
 		br
 		h2 #{portfolio.name}
-		h4 Available Capital: #{portfolio.availableCapital}
+		
+    //- Round availableCapital to nearest two decimal places
+		- var factor = Math.pow(10, 2);
+		- var availableCapital = portfolio.availableCapital
+		h4 Available Capital: #{Math.round(availableCapital * factor) / factor}
 		p.lead #{portfolio.description}
 		ul.nav.nav-tabs(role='tablist')
 			li.nav-item.mr-2
@@ -74,7 +78,9 @@ block content
 																		input(type="hidden" id="stockTicker" name="stockTicker" value=stock.ticker)
 																		button.dropdown-item(type="submit") Sell All
 																	
-																	button.dropdown-item(data-toggle='modal' data-target='#buy-more-shares-modal') Buy More
+																	button.dropdown-item.buy-more-modal-toggler(data-toggle='modal' 
+																		data-target='#buy-more-shares-modal' data-stock=stock.ticker data-section=sectionId) Buy More
+																	
 																	button.dropdown-item.performance-checker(ticker=stock.ticker) Stock Performance
 						- sectionId++
 
@@ -92,8 +98,6 @@ block content
 						.row.mb-4
 							.col-md-6
 								select.select-stock.form-control( style='width: 50em;')
-									each stock in availableStocks
-										option(value=stock.symbol) #{stock.symbol}
 						.row
 							.col-md-12.card-container(style='width=30em;')
 
@@ -143,6 +147,7 @@ block javascript
 		var stockPriceLabel = $('#buy-more-shares-modal label[name="stock-price"]');
 		var maxSharesLabel = $('#buy-more-shares-modal label[name="max-shares"');
 		var numSharesInput = $('#buy-more-shares-modal input[name="numShares"]');
+		var buyMoreToggler = $('.buy-more-modal-toggler');
 	
 		$(document).ready(function() {
 			// Update the available tickers
@@ -188,6 +193,19 @@ block javascript
 			// Set up the information for the first stock
 			sectionSelector.trigger('change');
 			tickerSelector.trigger('change');
+			
+			//Create a listener for the 'Buy More' buttons to update the modal selections
+			buyMoreToggler.on('click', function() {
+				var section = $(this).attr('data-section');
+				var ticker = $(this).attr('data-stock');
+				console.log(section);
+				console.log(ticker);
+				
+				sectionSelector.val(section);
+				sectionSelector.trigger('change');
+				tickerSelector.val(ticker).change();
+				tickerSelector.trigger('change');
+			});
 		});
 	
 	script.
@@ -200,9 +218,14 @@ block javascript
 		}
 
 		$(document).ready(function() {
-			//Considering not using select2 because multi select is slow anyways, and
-			//single select with select2 is noticeably slower than plain selecter
-			//- $('.multi-select-stock').select2();
+			
+			//Set the options of the ticker selector after the page has loaded
+			//to significantly reduce load time
+			$(document).ready(function() {
+				var stockSelector = $('.select-stock');
+				var available = !{JSON.stringify(availableStocks)}
+				stockSelector.html(available);
+			});
 
 			$('.select-stock').on('change', function() {
 				var ticker = this.value;
