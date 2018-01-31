@@ -1,0 +1,11 @@
+script.
+  $(document).ready( function() {
+    let port_id = '#{portfolio.portfolio_id}';
+
+    $.ajax({
+      method: 'PUT',
+      url: '/stocks/update-portfolio/' + port_id
+    }).done(function (response) {
+      console.log(response);
+    })
+  })

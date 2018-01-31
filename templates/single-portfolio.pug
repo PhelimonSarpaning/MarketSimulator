@@ -6,8 +6,7 @@ block content
 	.container
 		br
 		h2 #{portfolio.name}
-		
-    //- Round availableCapital to nearest two decimal places
+		//- Round availableCapital to nearest two decimal places
 		- var factor = Math.pow(10, 2);
 		- var availableCapital = portfolio.availableCapital
 		h4 Available Capital: #{Math.round(availableCapital * factor) / factor}
@@ -69,19 +68,19 @@ block content
 														td --
 														td
 															.dropdown.show
-																a.btn.btn-secondary.dropdown-toggle(href="https://example.com" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false")
+																button.btn.dropdown-toggle(style="background-color: lightgray;" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false")
 																
-																.dropdown-menu.dropdown-menu-right(aria-labelledby="dropdownMenuLink")
-																	form.form(method="POST" action="/stocks/sell-all/")
-																		input(type="hidden" id="portId" name="portId" value=portfolio.portfolio_id)
-																		input(type="hidden" id="sectionId" name="sectionId" value=sectionId)
-																		input(type="hidden" id="stockTicker" name="stockTicker" value=stock.ticker)
-																		button.dropdown-item(type="submit") Sell All
-																	
+																.dropdown-menu.dropdown-menu-right(style="padding: 0; padding-top: 0.1em;" aria-labelledby="dropdownMenuLink")
 																	button.dropdown-item.buy-more-modal-toggler(data-toggle='modal' 
 																		data-target='#buy-more-shares-modal' data-stock=stock.ticker data-section=sectionId) Buy More
 																	
 																	button.dropdown-item.performance-checker(ticker=stock.ticker) Stock Performance
+																	
+																	form.form(method="POST" action="/stocks/sell-all/")
+																		input(type="hidden" id="portId" name="portId" value=portfolio.portfolio_id)
+																		input(type="hidden" id="sectionId" name="sectionId" value=sectionId)
+																		input(type="hidden" id="stockTicker" name="stockTicker" value=stock.ticker)
+																		button.dropdown-item.bg-danger.text-white(type="submit") Sell All
 						- sectionId++
 
 						br
@@ -102,7 +101,7 @@ block content
 							.col-md-12.card-container(style='width=30em;')
 
 					#advanced-search.tab-pane(role='tabpanel')
-						p.lead something
+						p.lead (Coming Soon)
 			#settings.tab-pane(role='tabpanel')
 				include includes/edit-description-modal.pug
 				include includes/edit-name-modal.pug
@@ -112,15 +111,15 @@ block content
 				h2 Settings
 				br
 				
-				.d-flex.flex-row.align-items-center
-					h4.mr-4 Name:
+				.col-sm-3.d-flex.flex-row.align-items-center
+					h4.mr-auto.ml-0 Name:
 					button.btn.btn-primary.btn-sm.mb-2(data-toggle='modal' data-target='#edit-name') Edit
-				p.lead #{portfolio.name}
+				p.lead &nbsp;&nbsp;&nbsp;&nbsp;#{portfolio.name}
 				
-				.d-flex.flex-row.align-items-center
-					h4.mr-4 Description:
+				.col-sm-3.d-flex.flex-row.align-items-center
+					h4.mr-auto.ml-0 Description:
 					button.btn.btn-primary.btn-sm.mb-2(data-toggle='modal' data-target='#edit-description') Edit
-				p.lead #{portfolio.description}
+				p.lead &nbsp;&nbsp;&nbsp;&nbsp;#{portfolio.description}
 				hr
 				br
 				br
@@ -133,11 +132,12 @@ block content
 
 
 block javascript
+	include includes/update.pug
+	
 	script(src='/bower_components/select2/dist/js/select2.min.js')
 	script(src='/bower_components/jquery-validation/dist/jquery.validate.min.js')
 	script(src='/js/settings.js')
 	script(src='/js/stockPerformance.js')
-	//- script(src='/js/buyMore.js')
 	
 	
 	script.

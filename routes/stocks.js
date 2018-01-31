@@ -161,6 +161,7 @@ router.post('/edit-name/:id', ensureAuthenticated, function(req, res) {
 	);
 });
 
+// Route for purchasing new stocks
 router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, function(req, res) {
 	const ticker = req.params.ticker;
 	const section_id = req.body.addSection;
@@ -223,6 +224,7 @@ router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, functi
 	})
 });
 
+// Deletes an entire portfolio
 router.delete('/delete-portfolio/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	const portfolio_name = req.body.name;
@@ -241,6 +243,7 @@ router.delete('/delete-portfolio/:id', ensureAuthenticated, function(req, res) {
 	);
 });
 
+// Resets a portfolio with the original available capital, erasing all progress
 router.post('/restart-portfolio/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	const portfolio_name = req.body.name;
@@ -260,6 +263,7 @@ router.post('/restart-portfolio/:id', ensureAuthenticated, function(req, res) {
 	);
 });
 
+// Route for selling all shares of a stock
 router.post('/sell-all/', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.body.portId;
 	const section_id = req.body.sectionId;
@@ -314,6 +318,7 @@ router.post('/sell-all/', ensureAuthenticated, function(req, res) {
 	});
 });
 
+// Route for buying more shares of exisiting stocks
 router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.body.portId;
 	const section_number = parseInt(req.body.selectSection);
@@ -374,7 +379,7 @@ router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 									}
 								});
 
-								// Return so that the loop does not continue at the headers of
+								// Return so that the loop does not continue and the headers of
 								// res do not get reset after it is sent
 								return;
 							}
@@ -385,5 +390,56 @@ router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 		}
 	)
 });
+
+let updatePrices = function(section) {
+	return new Promise(function(resolve, reject) {
+		var holdings = section.holdings;
+
+		for (var holdings_count = 0; holdings_count < holdings.length; ++holdings_count) {
+			let ticker = holdings[holdings_count].ticker;
+			const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
+
+			updateSingleHolding(fullUrl, holdings, holdings_count)
+				.then(function(result) {
+					holdings = result;
+				})
+		}
+
+		resolve(holdings);
+	});
+}
+
+let updateSingleHolding = function(fullUrl, holdings, holdings_count) {
+	return new Promise(function(resolve, reject) {
+		request.get(fullUrl, function(err, response, body) {
+			var quote = JSON.parse(body);
+
+			holdings[holdings_count].lastPrice = quote.latestPrice;
+
+			// If we are done updating all prices, go ahead and return the section
+			resolve(holdings);
+		});
+	});
+}
+
+// Route for updating the prices of all stocks in a portfolio
+router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
+	const portfolio_id = req.params.id;
+
+	User.findOne({username: req.user.username, 'portfolios.portfolio_id': portfolio_id},
+		{'portfolios.$': 1, '_id': 0}, function(err, doc) {
+			var portfolio = doc.portfolios[0];
+			var sections = portfolio.sections;
+
+			for (var i = 0; i < sections.length; i++) {
+				updatePrices(sections[i])
+					.then(function(result) {
+						sections[i] = result;
+					});
+			}
+			return res.send('updating complete');
+	});
+});
+
 
 module.exports = router;
