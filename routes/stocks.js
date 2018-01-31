@@ -391,21 +391,29 @@ router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 	)
 });
 
-let updatePrices = function(section) {
+let updatePrices = function(section, index) {
 	return new Promise(function(resolve, reject) {
 		var holdings = section.holdings;
+		var holdings_updated = 0;
 
-		for (var holdings_count = 0; holdings_count < holdings.length; ++holdings_count) {
+		for (var holdings_count = 0; holdings_count < holdings.length; holdings_count++) {
 			let ticker = holdings[holdings_count].ticker;
 			const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
 
 			updateSingleHolding(fullUrl, holdings, holdings_count)
 				.then(function(result) {
-					holdings = result;
+					let index = result[1];
+					let price = result[0];
+					holdings[index].lastPrice = price;
+					holdings_updated++;
+
+					if(holdings_updated === holdings.length) {
+						// console.log(holdings)
+						section.holdings = holdings;
+						resolve([section, index]);
+					}
 				})
 		}
-
-		resolve(holdings);
 	});
 }
 
@@ -413,11 +421,7 @@ let updateSingleHolding = function(fullUrl, holdings, holdings_count) {
 	return new Promise(function(resolve, reject) {
 		request.get(fullUrl, function(err, response, body) {
 			var quote = JSON.parse(body);
-
-			holdings[holdings_count].lastPrice = quote.latestPrice;
-
-			// If we are done updating all prices, go ahead and return the section
-			resolve(holdings);
+			resolve([quote.latestPrice, holdings_count]);
 		});
 	});
 }
@@ -425,19 +429,36 @@ let updateSingleHolding = function(fullUrl, holdings, holdings_count) {
 // Route for updating the prices of all stocks in a portfolio
 router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
+	var new_sections = [];
 
 	User.findOne({username: req.user.username, 'portfolios.portfolio_id': portfolio_id},
 		{'portfolios.$': 1, '_id': 0}, function(err, doc) {
 			var portfolio = doc.portfolios[0];
 			var sections = portfolio.sections;
+			console.log(sections)
 
 			for (var i = 0; i < sections.length; i++) {
-				updatePrices(sections[i])
+				updatePrices(sections[i], i)
 					.then(function(result) {
-						sections[i] = result;
+						var index = result[1];
+						var updated_section = result[0]
+						sections[index] = updated_section;
+						new_sections.push(updated_section);
+						console.log('UPDATED-----------')
+						console.log(index)
+						console.log(new_sections)
+
+						if(new_sections.length === sections.length) {
+							console.log('SAVING')
+							doc.portfolios[0].sections = new_sections;
+							doc.save(function(err) {
+								console.log('returnin')
+								return res.send('updating complete');
+							});
+						}
 					});
 			}
-			return res.send('updating complete');
+
 	});
 });
 
