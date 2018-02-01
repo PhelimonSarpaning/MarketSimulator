@@ -4,7 +4,7 @@ const passport = require('passport');
 const ensureAuthenticated = require('./authenticated');
 //request module for making get requests to IEX
 const request = require('request');
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');
 
 //Express validator middleware
 const { check, validationResult } = require('express-validator/check');
@@ -15,67 +15,86 @@ let User = require('../models/user');
 // Base url for making get requests to IEX API
 const baseUrl = 'https://api.iextrading.com/1.0';
 
-function getQuote(ticker) {
-	const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
-	request.get(fullUrl, function(err, response, body) {
-		return JSON.parse(body);
-	})
+let getQuote = function(ticker) {
+	return new Promise(function(resolve, reject) {
+		const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
+		request.get(fullUrl, function(err, response, body) {
+			if(err)
+				reject()
+			else
+				resolve(JSON.parse(body));
+		});
+	});
 }
 
-function getCompanyData(ticker) {
-	const fullUrl = baseUrl + '/stock/' + ticker + '/company';
-	request.get(fullUrl, function(err, response, body) {
-		return JSON.parse(body);
-	})
+let getCompany = function(ticker) {
+	return new Promise(function(resolve, reject) {
+		const fullUrl = baseUrl + '/stock/' + ticker + '/company';
+		request.get(fullUrl, function(err, response, body) {
+			if(err)
+				reject()
+			else
+				resolve(JSON.parse(body));
+		});
+	});
 }
 
-function getStats(ticker) {
-	const fullUrl = baseUrl + '/stock/' + ticker + '/stats';
-	request.get(fullUrl, function(err, response, body) {
-		return JSON.parse(body);
-	})
+let getStats = function(ticker) {
+	return new Promise(function(resolve, reject) {
+		const fullUrl = baseUrl + '/stock/' + ticker + '/stats';
+		request.get(fullUrl, function(err, response, body) {
+			if(err)
+				reject()
+			else
+				resolve(JSON.parse(body));
+		});
+	});
 }
 
-function getAllData(ticker) {
-	var quote = getQuote(ticker);
-	var company = getCompanyData(ticker);
-	var stats = getStats(ticker);
+let getChart = function(ticker, duration) {
+	return new Promise(function(resolve, reject) {
+		const fullUrl = baseUrl + '/stock/' + ticker + '/chart/' + duration;
+		request.get(fullUrl, function(err, response, body) {
+			if(err)
+				reject()
+			else
+				resolve(JSON.parse(body));
+		});
+	});
 }
 
 router.get('/stock-card/:ticker', function(req, res) {
 	const ticker = req.params.ticker;
+	const duration = '3m';
 	var quote, company, stats, chart;
 
-	request.get(baseUrl + '/stock/' + ticker + '/quote', function(err, response, quoteBody) {
-		quote = JSON.parse(quoteBody);
+	getQuote(ticker).then(function(fetched_quote) {
+			quote = fetched_quote;
+			return getCompany(ticker);
+	}).then(function(fetched_company) {
+		company = fetched_company;
+		return getStats(ticker);
+	}).then(function(fetched_stats) {
+		stats = fetched_stats;
+		return getChart(ticker, duration);
+	}).then(function(fetched_chart) {
+		chart = fetched_chart;
 
-		request.get(baseUrl + '/stock/' + ticker + '/company', function(err, response, companyBody) {
-			company = JSON.parse(companyBody);
-
-			request.get(baseUrl + '/stock/' + ticker + '/stats', function(err, response, statsBody) {
-				stats = JSON.parse(statsBody);
-
-				request.get(baseUrl + '/stock/' + ticker + '/chart/3m', function(err, response, chartBody) {
-					chart = JSON.parse(chartBody);
-
-					var sanitizedChart = [];
-					for(var i = 0; i < chart.length; i++) {
-						sanitizedChart.push({
-							date: chart[i].date,
-							value: chart[i].close
-						});
-					}
-
-					data = {
-						quote: quote,
-						company: company,
-						stats: stats,
-						chart: sanitizedChart
-					};
-					res.send(data);
-				});
+		var simpleChart = [];
+		for(var i = 0; i < chart.length; i++) {
+			simpleChart.push({
+				date: chart[i].date,
+				value: chart[i].close
 			});
-		});
+		}
+
+		data = {
+			quote: quote,
+			company: company,
+			stats: stats,
+			chart: simpleChart
+		};
+		res.send(data);
 	});
 });
 

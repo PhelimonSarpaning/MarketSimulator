@@ -443,7 +443,6 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 				if(portfolios[count].portfolio_id === portfolio_id) {
 					var portfolio = doc.portfolios[count];
 					var sections = portfolio.sections;
-					console.log(sections)
 
 					for (var i = 0; i < sections.length; i++) {
 						updatePrices(sections[i], i)
@@ -452,19 +451,14 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 								var updated_section = result[0]
 								sections[index] = updated_section;
 								new_sections.push(updated_section);
-								console.log('UPDATED-----------');
-								console.log(index);
-								console.log(new_sections);
 
 								if(new_sections.length === sections.length) {
-									console.log('SAVING -----------')
 									portfolio.sections = new_sections;
 									doc.portfolios[count] = portfolio;
 
 									doc.markModified('portfolios.' + count + '.sections');
 
 									doc.save(function(err) {
-										console.log('returnin');
 										return res.send('updating complete');
 									});
 								}
