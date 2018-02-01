@@ -391,6 +391,9 @@ router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 	)
 });
 
+
+
+
 let updatePrices = function(section, index) {
 	return new Promise(function(resolve, reject) {
 		var holdings = section.holdings;
@@ -431,36 +434,48 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	var new_sections = [];
 
-	User.findOne({username: req.user.username, 'portfolios.portfolio_id': portfolio_id},
-		{'portfolios.$': 1, '_id': 0}, function(err, doc) {
-			var portfolio = doc.portfolios[0];
-			var sections = portfolio.sections;
-			console.log(sections)
+	User.findOne({username: req.user.username,
+			'portfolios.portfolio_id': portfolio_id},
+		function(err, doc) {
+			var portfolios = doc.portfolios;
 
-			for (var i = 0; i < sections.length; i++) {
-				updatePrices(sections[i], i)
-					.then(function(result) {
-						var index = result[1];
-						var updated_section = result[0]
-						sections[index] = updated_section;
-						new_sections.push(updated_section);
-						console.log('UPDATED-----------')
-						console.log(index)
-						console.log(new_sections)
+			for (var count = 0; count < portfolios.length; count++) {
+				if(portfolios[count].portfolio_id === portfolio_id) {
+					var portfolio = doc.portfolios[count];
+					var sections = portfolio.sections;
+					console.log(sections)
 
-						if(new_sections.length === sections.length) {
-							console.log('SAVING')
-							doc.portfolios[0].sections = new_sections;
-							doc.save(function(err) {
-								console.log('returnin')
-								return res.send('updating complete');
+					for (var i = 0; i < sections.length; i++) {
+						updatePrices(sections[i], i)
+							.then(function(result) {
+								var index = result[1];
+								var updated_section = result[0]
+								sections[index] = updated_section;
+								new_sections.push(updated_section);
+								console.log('UPDATED-----------');
+								console.log(index);
+								console.log(new_sections);
+
+								if(new_sections.length === sections.length) {
+									console.log('SAVING -----------')
+									portfolio.sections = new_sections;
+									doc.portfolios[count] = portfolio;
+
+									doc.markModified('portfolios.' + count + '.sections');
+
+									doc.save(function(err) {
+										console.log('returnin');
+										return res.send('updating complete');
+									});
+								}
 							});
-						}
-					});
+					}
+
+					return;
+				}
 			}
-
-	});
+		}
+	);
 });
-
 
 module.exports = router;
