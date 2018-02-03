@@ -398,33 +398,44 @@ let updatePrices = function(section, index) {
 	return new Promise(function(resolve, reject) {
 		var holdings = section.holdings;
 		var holdings_updated = 0;
+		var ticker_to_price = {};
 
 		for (var holdings_count = 0; holdings_count < holdings.length; holdings_count++) {
 			let ticker = holdings[holdings_count].ticker;
-			const fullUrl = baseUrl + '/stock/' + ticker + '/quote';
-
-			updateSingleHolding(fullUrl, holdings, holdings_count)
+			
+			updateSingleHolding(ticker, holdings, holdings_count)
 				.then(function(result) {
-					let index = result[1];
 					let price = result[0];
+					let index = result[1];
+					let ticker_of_price = result[2];
+
 					holdings[index].lastPrice = price;
+					// let rand_num = Math.random() * 100
+					// holdings[index].lastPrice = rand_num;
 					holdings_updated++;
 
+					ticker_to_price[ticker_of_price] = price;
+					// ticker_to_price[ticker_of_price] = rand_num;
+
 					if(holdings_updated === holdings.length) {
-						// console.log(holdings)
 						section.holdings = holdings;
-						resolve([section, index]);
+						resolve([section, index, ticker_to_price]);
 					}
+				}, function(reason) {
+					reject(reason);
 				})
 		}
 	});
 }
 
-let updateSingleHolding = function(fullUrl, holdings, holdings_count) {
+let updateSingleHolding = function(ticker, holdings, holdings_count) {
 	return new Promise(function(resolve, reject) {
+		const fullUrl = baseUrl + '/stock/' + ticker + '/quote';;
 		request.get(fullUrl, function(err, response, body) {
+			if(err)
+				reject()
 			var quote = JSON.parse(body);
-			resolve([quote.latestPrice, holdings_count]);
+			resolve([quote.latestPrice, holdings_count, ticker]);
 		});
 	});
 }
@@ -433,6 +444,7 @@ let updateSingleHolding = function(fullUrl, holdings, holdings_count) {
 router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 	const portfolio_id = req.params.id;
 	var new_sections = [];
+	var ticker_prices = {};
 
 	User.findOne({username: req.user.username,
 			'portfolios.portfolio_id': portfolio_id},
@@ -447,10 +459,14 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 					for (var i = 0; i < sections.length; i++) {
 						updatePrices(sections[i], i)
 							.then(function(result) {
-								var index = result[1];
-								var updated_section = result[0]
+								let updated_section = result[0];
+								let index = result[1];
+								let price_set = result[2];
+
 								sections[index] = updated_section;
 								new_sections.push(updated_section);
+
+								Object.assign(ticker_prices, price_set);
 
 								if(new_sections.length === sections.length) {
 									portfolio.sections = new_sections;
@@ -459,12 +475,16 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 									doc.markModified('portfolios.' + count + '.sections');
 
 									doc.save(function(err) {
-										return res.send('updating complete');
+										return res.send(JSON.stringify(ticker_prices));
 									});
 								}
+							}, function(reason) {
+								req.flash('We were unable to update your stocks.');
+								return res.send(reason);
 							});
 					}
 
+          // Prevent the loop from continuing to run after a match is found
 					return;
 				}
 			}

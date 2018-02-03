@@ -63,7 +63,7 @@ block content
 														td #{stock.shares}
 														td #{stock.ticker}
 														td #{stock.purchasePrice}
-														td #{stock.lastPrice}
+														td.last-price(ticker=stock.ticker) #{stock.lastPrice}
 														td --
 														td --
 														td

@@ -1,11 +1,28 @@
 script.
-  $(document).ready( function() {
-    let port_id = '#{portfolio.portfolio_id}';
+	let port_id = '#{portfolio.portfolio_id}';
 
-    $.ajax({
-      method: 'PUT',
-      url: '/stocks/update-portfolio/' + port_id
-    }).done(function (response) {
-      console.log(response);
-    })
-  })
+	function precisionRound(number, precision) {
+	  var factor = Math.pow(10, precision);
+	  return Math.round(number * factor) / factor;
+	}
+
+	function updateAllPrices() {
+		$.ajax({
+			method: 'PUT',
+			url: '/stocks/update-portfolio/' + port_id
+		}).done(function (response) {
+			console.log(response);
+			let price_set = JSON.parse(response);
+
+			$('.last-price').html(function() {
+				let ticker = $(this).attr('ticker');
+				return precisionRound(price_set[ticker], 2);
+			});
+
+			setTimeout(updateAllPrices, 10 * 1000);
+		});
+	}
+
+	$(document).ready( function() {
+		setTimeout(updateAllPrices, 10 * 1000);
+	});
