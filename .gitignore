@@ -1,2 +1,4 @@
 # ignore node modules
 node_modules/
+# ignore frontend stuff, can be built using "bower install"
+public/bower_components/
