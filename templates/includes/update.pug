@@ -18,11 +18,36 @@ script.
 				let ticker = $(this).attr('ticker');
 				return precisionRound(price_set[ticker], 2);
 			});
+			
+			$('.gain-percent').html(function() {
+				let ticker = $(this).attr('ticker');
+				let purchasePrice = $(this).attr('buy-price');
+				let gain = precisionRound((price_set[ticker] - purchasePrice) / purchasePrice * 100, 2);
+				if(gain < 0)
+					$(this).css('color', 'firebrick');
+				else
+					$(this).css('color', 'forestgreen');
+				
+				return gain;
+			});
+			
+			$('.gain-absolute').html(function() {
+				let ticker = $(this).attr('ticker');
+				let purchasePrice = $(this).attr('buy-price');
+				let gain = precisionRound(price_set[ticker] - purchasePrice, 2);
+				if(gain < 0)
+					$(this).css('color', 'firebrick');
+				else
+					$(this).css('color', 'forestgreen');
+				
+				return gain;
+			});
 
+			/* Update every 10 seconds */
 			setTimeout(updateAllPrices, 10 * 1000);
 		});
 	}
 
 	$(document).ready( function() {
-		setTimeout(updateAllPrices, 10 * 1000);
+		updateAllPrices()
 	});

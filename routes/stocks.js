@@ -392,9 +392,12 @@ router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 });
 
 
+function precisionRound(number, precision) {
+	var factor = Math.pow(10, precision);
+	return Math.round(number * factor) / factor;
+}
 
-
-let updatePrices = function(section, index) {
+function updatePrices(section, index) {
 	return new Promise(function(resolve, reject) {
 		var holdings = section.holdings;
 		var holdings_updated = 0;
@@ -402,14 +405,17 @@ let updatePrices = function(section, index) {
 
 		for (var holdings_count = 0; holdings_count < holdings.length; holdings_count++) {
 			let ticker = holdings[holdings_count].ticker;
-			
+
 			updateSingleHolding(ticker, holdings, holdings_count)
 				.then(function(result) {
 					let price = result[0];
 					let index = result[1];
 					let ticker_of_price = result[2];
+					let buy_price = holdings[index].purchasePrice;
 
 					holdings[index].lastPrice = price;
+					holdings[index].percentGain = precisionRound((price - buy_price) / buy_price * 100, 2);
+					holdings[index].absoluteGain = precisionRound(price - buy_price, 2);
 					// let rand_num = Math.random() * 100
 					// holdings[index].lastPrice = rand_num;
 					holdings_updated++;
@@ -428,7 +434,7 @@ let updatePrices = function(section, index) {
 	});
 }
 
-let updateSingleHolding = function(ticker, holdings, holdings_count) {
+function updateSingleHolding(ticker, holdings, holdings_count) {
 	return new Promise(function(resolve, reject) {
 		const fullUrl = baseUrl + '/stock/' + ticker + '/quote';;
 		request.get(fullUrl, function(err, response, body) {

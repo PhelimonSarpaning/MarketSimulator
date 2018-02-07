@@ -1,0 +1,67 @@
+script.
+  var portfolio_sections = null;
+  var sectionSelector = $('#buy-more-shares-modal select[name="selectSection"]');
+  var tickerSelector = $('#buy-more-shares-modal select[name="selectTicker"]');
+  var stockPriceLabel = $('#buy-more-shares-modal label[name="stock-price"]');
+  var maxSharesLabel = $('#buy-more-shares-modal label[name="max-shares"');
+  var numSharesInput = $('#buy-more-shares-modal input[name="numShares"]');
+  var buyMoreToggler = $('.buy-more-modal-toggler');
+
+  $(document).ready(function() {
+    // Update the available tickers
+    sectionSelector.on('change', function() {
+      var sectionId = $(this).val();
+      if(portfolio_sections == null)
+        portfolio_sections = !{JSON.stringify(portfolio.sections)}
+      var section = portfolio_sections[sectionId]
+
+      tickerSelector.empty();
+      var stocks = [];
+      for(var i = 0; i < section.holdings.length; i++) {
+        var ticker = section.holdings[i].ticker
+        stocks.push(ticker);
+        tickerSelector.append(
+          $('<option></option>')
+          .attr('value', ticker)
+          .text(ticker) )
+      }
+      
+      tickerSelector.trigger('change');
+    });
+    
+    tickerSelector.on('change', function() {
+      if(portfolio_sections == null)
+        portfolio_sections = !{JSON.stringify(portfolio.sections)}
+        
+      var ticker = $(this).val()
+      var url = 'https://api.iextrading.com/1.0/stock/' + ticker + '/quote';
+      $.ajax({
+        url: url,
+        method: 'get'
+      }).done(function(data) {
+        var maxStocks = Math.trunc('#{portfolio.availableCapital}' / data.latestPrice);
+        console.log(maxStocks);
+        
+        stockPriceLabel.text(data.latestPrice);
+        maxSharesLabel.text(maxStocks);
+        numSharesInput.attr('max', maxStocks);
+      });
+    });
+    
+    // Set up the information for the first stock
+    sectionSelector.trigger('change');
+    tickerSelector.trigger('change');
+    
+    //Create a listener for the 'Buy More' buttons to update the modal selections
+    buyMoreToggler.on('click', function() {
+      var section = $(this).attr('data-section');
+      var ticker = $(this).attr('data-stock');
+      console.log(section);
+      console.log(ticker);
+      
+      sectionSelector.val(section);
+      sectionSelector.trigger('change');
+      tickerSelector.val(ticker).change();
+      tickerSelector.trigger('change');
+    });
+  });
