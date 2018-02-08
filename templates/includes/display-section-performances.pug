@@ -14,7 +14,8 @@ script.
     return (a.profits > b.profits ? -1 : 1);
   })
   
-  console.log(performance_data)
+  let width = (performance_data.length * 5) + 'em';
+  $('#section-performances').css('width', width)
   
   var section_performance_chart = AmCharts.makeChart('section-performances', {
     "theme": "none",

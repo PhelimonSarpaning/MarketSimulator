@@ -304,12 +304,13 @@ router.post('/sell-all/', ensureAuthenticated, function(req, res) {
 					portfolio.sections[section_id] = section;
 					portfolios[i] = portfolio;
 
-					user.markModified(modifiedMarker);
+					if(modifiedMarker !== '')
+						user.markModified(modifiedMarker);
 					user.markModified('portfolios.' + i + '.availableCapital');
 					user.save(function(err, user) {
 						if(err) {
 							console.log(err);
-							req.flash('error', 'Something went wrong in selling your stocks.');
+							req.flash('error', 'Something went wrong in selling your stocks of' + ticker + '.');
 						}
 
 						res.redirect('/stocks/view-portfolio/' + portfolio_id);
@@ -413,47 +414,48 @@ function updatePrices(section, index) {
 	return new Promise(function(resolve, reject) {
 		if(section.holdings.length === 0) {
 			resolve([section, index, null, section.profits]);
-		}
+		} else {
 
-    // reset the profits when calculating them
-		section.profits = 0;
-		var holdings = section.holdings;
-		var holdings_updated = 0;
-		var ticker_to_price = {};
+	    // reset the profits when calculating them
+			section.profits = 0;
+			var holdings = section.holdings;
+			var holdings_updated = 0;
+			var ticker_to_price = {};
 
-		for (var holdings_count = 0; holdings_count < holdings.length; holdings_count++) {
-			let ticker = holdings[holdings_count].ticker;
+			for (var holdings_count = 0; holdings_count < holdings.length; holdings_count++) {
+				let ticker = holdings[holdings_count].ticker;
 
-			updateSingleHolding(ticker, holdings, holdings_count)
-				.then(function(result) {
-					var price = result[0];
-					let index = result[1];
-					let ticker_of_price = result[2];
-					let buy_price = holdings[index].purchasePrice;
+				updateSingleHolding(ticker, holdings, holdings_count)
+					.then(function(result) {
+						var price = result[0];
+						let index = result[1];
+						let ticker_of_price = result[2];
+						let buy_price = holdings[index].purchasePrice;
 
-					var singleStock = holdings[index];
-					price = Math.random() * 100;
-					// singleStock.lastPrice = rand_num;
-					singleStock.lastPrice = price;
-					singleStock.percentGain = precisionRound((price - buy_price) / buy_price * 100, 2);
-					singleStock.absoluteGain = precisionRound(price - buy_price, 2);
+						var singleStock = holdings[index];
+						price = Math.random() * 100;
+						// singleStock.lastPrice = rand_num;
+						singleStock.lastPrice = price;
+						singleStock.percentGain = precisionRound((price - buy_price) / buy_price * 100, 2);
+						singleStock.absoluteGain = precisionRound(price - buy_price, 2);
 
-					let total_absolute_gain = singleStock.absoluteGain * singleStock.shares;
-					section.profits += total_absolute_gain;
+						let total_absolute_gain = singleStock.absoluteGain * singleStock.shares;
+						section.profits += total_absolute_gain;
 
-					holdings[index] = singleStock;
-					holdings_updated++;
+						holdings[index] = singleStock;
+						holdings_updated++;
 
-					ticker_to_price[ticker_of_price] = price;
-					// ticker_to_price[ticker_of_price] = rand_num;
+						ticker_to_price[ticker_of_price] = price;
+						// ticker_to_price[ticker_of_price] = rand_num;
 
-					if(holdings_updated === holdings.length) {
-						section.holdings = holdings;
-						resolve([section, index, ticker_to_price, total_absolute_gain]);
-					}
-				}, function(reason) {
-					reject(reason);
-				})
+						if(holdings_updated === holdings.length) {
+							section.holdings = holdings;
+							resolve([section, index, ticker_to_price, total_absolute_gain]);
+						}
+					}, function(reason) {
+						reject(reason);
+					})
+			}
 		}
 	});
 }
@@ -494,8 +496,6 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 								let updated_section = result[0];
 								let index = result[1];
 								let price_set = result[2];
-								console.log(updated_section);
-								console.log(new_sections.length === sections.length)
 
 								let total_absolute_gain = result[3];
 								current_portfolio_value += total_absolute_gain;
@@ -514,7 +514,6 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 									doc.markModified('portfolios.' + count + '.sections');
 
 									doc.save(function(err) {
-										console.log('running')
 										return res.send(JSON.stringify(ticker_prices));
 									});
 								}
