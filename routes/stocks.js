@@ -411,6 +411,10 @@ function precisionRound(number, precision) {
 
 function updatePrices(section, index) {
 	return new Promise(function(resolve, reject) {
+		if(section.holdings.length === 0) {
+			resolve([section, index, null, section.profits]);
+		}
+
     // reset the profits when calculating them
 		section.profits = 0;
 		var holdings = section.holdings;
@@ -479,6 +483,7 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 
 			for (var count = 0; count < portfolios.length; count++) {
 				if(portfolios[count].portfolio_id === portfolio_id) {
+					// console.log('running')
 					var portfolio = doc.portfolios[count];
 					var current_portfolio_value = portfolio.availableCapital;
 					var sections = portfolio.sections;
@@ -489,6 +494,8 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 								let updated_section = result[0];
 								let index = result[1];
 								let price_set = result[2];
+								console.log(updated_section);
+								console.log(new_sections.length === sections.length)
 
 								let total_absolute_gain = result[3];
 								current_portfolio_value += total_absolute_gain;
@@ -507,6 +514,7 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 									doc.markModified('portfolios.' + count + '.sections');
 
 									doc.save(function(err) {
+										console.log('running')
 										return res.send(JSON.stringify(ticker_prices));
 									});
 								}
