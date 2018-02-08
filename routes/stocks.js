@@ -47,8 +47,9 @@ router.post('/new-portfolio', ensureAuthenticated, [
 		var request = {
 			name: req.body.name,
 			description: req.body.description,
-			capital: req.body.capital,
-			availableCapital: req.body.capital,
+			capital: parseInt(req.body.capital),
+			currentValue: parseInt(req.body.capital),
+			availableCapital: parseInt(req.body.capital),
 			portfolio_id: mongoose.Types.ObjectId().toString(),
 			sections: []
 		}
@@ -113,6 +114,8 @@ router.post('/new-section/:id', ensureAuthenticated, function(req, res) {
 	var newSection = {
 		name: sectionName,
 		section_id: mongoose.Types.ObjectId().toString(),
+		usedCapital: 0,
+		profits: 0,
 		holdings: []
 	};
 
@@ -172,13 +175,14 @@ router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, functi
 	request.get(fullUrl, function(err, response, body) {
 		const quote = JSON.parse(body);
 		const price = quote.latestPrice;
+		const total_shares_price = price * shares;
 
 		User.findOne({username: req.user.username}, function(err, userDoc) {
 			if(err || !userDoc) {
 				req.flash('error', 'Yikes, we were unable to load your profile!');
 				res.redirect('/stocks/view-portfolio/' + req.params.portfolio_id);
-			} else if(userDoc.availableCapital < price) {
-				req.flash('error', 'You do not have sufficient capital to purchase this stock.');
+			} else if(userDoc.availableCapital < total_shares_price) {
+				req.flash('error', 'You do not have sufficient capital to purchase these stocks.');
 				res.redirect('/stocks/view-portfolio/' + req.params.portfolio_id);
 			} else {
 				const newPurchase = {
@@ -193,11 +197,13 @@ router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, functi
 
         // Had to update portfolios this way (and not with the findOneAndUpdate
 				// function) because nested arrays are difficult to manipulate otherwise.
+        // Lesson learned!
 				var portfolios = userDoc.portfolios;
 				for(var i = 0; i < portfolios.length; i++) {
 					if(portfolios[i].portfolio_id == id) {
 						var portfolio = portfolios[i];
 						var section = portfolio.sections[section_id];
+						section.usedCapital += total_shares_price;
 						section.holdings.push(newPurchase);
 						portfolios[i].availableCapital -= price * shares;
 
@@ -287,13 +293,14 @@ router.post('/sell-all/', ensureAuthenticated, function(req, res) {
 						if(section.holdings[j].ticker === ticker) {
 							var stock = section.holdings[j];
 							sellPrice = stock.lastPrice * stock.shares;
+							section.usedCapital -= stock.purchasePrice * stock.shares;
 							section.holdings.splice(j, 1);
 
 							modifiedMarker = 'portfolios.' + i + '.sections.' + section_id;
 							break;
 						}
 					}
-					portfolio.availableCapital = portfolio.availableCapital + sellPrice;
+					portfolio.availableCapital += sellPrice;
 					portfolio.sections[section_id] = section;
 					portfolios[i] = portfolio;
 
@@ -302,7 +309,7 @@ router.post('/sell-all/', ensureAuthenticated, function(req, res) {
 					user.save(function(err, user) {
 						if(err) {
 							console.log(err);
-							req.flash('error', 'Something went wrong in buying your stocks.');
+							req.flash('error', 'Something went wrong in selling your stocks.');
 						}
 
 						res.redirect('/stocks/view-portfolio/' + portfolio_id);
@@ -329,7 +336,7 @@ router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 	User.findOne({username: req.user.username}, function(err, user) {
 			if(err || !user || !user.portfolios) {
 				console.log(err);
-				req.flash('error','Sorry, we were unable to purchase your stocks. Please try again later.');
+				req.flash('error','Sorry, we were unable to purchase your shares. Please try again later.');
 			} else {
         // We only projected the portfolio necessary, so it should be the first one
 				var portfolios = user.portfolios;
@@ -355,7 +362,12 @@ router.post('/buy-more/', ensureAuthenticated, function(req, res) {
 									} else {
 										holdings[counter].shares += shares;
 										portfolio.availableCapital -= totalPrice;
-										portfolio.sections[section_number].holdings = holdings;
+
+										var section = portfolio.sections[section_id];
+										section.holdings = holdings;
+										section.usedCapital += totalPrice;
+										section.profits += totalPrice;
+										portfolio.sections[section_id] = section;
 										user.portfolios[portfolioCount] = portfolio;
 
 										user.markModified('portfolios.' + portfolioCount
@@ -399,6 +411,8 @@ function precisionRound(number, precision) {
 
 function updatePrices(section, index) {
 	return new Promise(function(resolve, reject) {
+    // reset the profits when calculating them
+		section.profits = 0;
 		var holdings = section.holdings;
 		var holdings_updated = 0;
 		var ticker_to_price = {};
@@ -408,16 +422,22 @@ function updatePrices(section, index) {
 
 			updateSingleHolding(ticker, holdings, holdings_count)
 				.then(function(result) {
-					let price = result[0];
+					var price = result[0];
 					let index = result[1];
 					let ticker_of_price = result[2];
 					let buy_price = holdings[index].purchasePrice;
 
-					holdings[index].lastPrice = price;
-					holdings[index].percentGain = precisionRound((price - buy_price) / buy_price * 100, 2);
-					holdings[index].absoluteGain = precisionRound(price - buy_price, 2);
-					// let rand_num = Math.random() * 100
-					// holdings[index].lastPrice = rand_num;
+					var singleStock = holdings[index];
+					price = Math.random() * 100;
+					// singleStock.lastPrice = rand_num;
+					singleStock.lastPrice = price;
+					singleStock.percentGain = precisionRound((price - buy_price) / buy_price * 100, 2);
+					singleStock.absoluteGain = precisionRound(price - buy_price, 2);
+
+					let total_absolute_gain = singleStock.absoluteGain * singleStock.shares;
+					section.profits += total_absolute_gain;
+
+					holdings[index] = singleStock;
 					holdings_updated++;
 
 					ticker_to_price[ticker_of_price] = price;
@@ -425,7 +445,7 @@ function updatePrices(section, index) {
 
 					if(holdings_updated === holdings.length) {
 						section.holdings = holdings;
-						resolve([section, index, ticker_to_price]);
+						resolve([section, index, ticker_to_price, total_absolute_gain]);
 					}
 				}, function(reason) {
 					reject(reason);
@@ -460,6 +480,7 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 			for (var count = 0; count < portfolios.length; count++) {
 				if(portfolios[count].portfolio_id === portfolio_id) {
 					var portfolio = doc.portfolios[count];
+					var current_portfolio_value = portfolio.availableCapital;
 					var sections = portfolio.sections;
 
 					for (var i = 0; i < sections.length; i++) {
@@ -469,15 +490,20 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 								let index = result[1];
 								let price_set = result[2];
 
+								let total_absolute_gain = result[3];
+								current_portfolio_value += total_absolute_gain;
+
 								sections[index] = updated_section;
 								new_sections.push(updated_section);
 
 								Object.assign(ticker_prices, price_set);
 
 								if(new_sections.length === sections.length) {
+									portfolio.currentValue = current_portfolio_value;
 									portfolio.sections = new_sections;
 									doc.portfolios[count] = portfolio;
 
+									doc.markModified('portfolios.' + count + '.currentValue');
 									doc.markModified('portfolios.' + count + '.sections');
 
 									doc.save(function(err) {
