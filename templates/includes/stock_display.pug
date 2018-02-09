@@ -3,8 +3,10 @@ script.
     return (!data) ? 'N/A' : data;
   }
 
-  function zoomChart(chart) {
-      chart.zoomToIndexes(chart.dataProvider.length-30, chart.dataProvider.length - 1);
+  function zoomChart(single_stock_chart) {
+      single_stock_chart.zoomToIndexes(
+        single_stock_chart.dataProvider.length-30, 
+        single_stock_chart.dataProvider.length - 1);
   }
 
   $(document).ready(function() {
@@ -134,7 +136,7 @@ script.
 
         $('.card-container').html(buyModal + stockCard);
 
-        var chart = AmCharts.makeChart("stock-chart-div", {
+        var single_stock_chart = AmCharts.makeChart("stock-chart-div", {
           "type": "serial",
           "theme": "light",
           "marginRight": 40,
@@ -215,9 +217,11 @@ script.
           "dataProvider": chartData
         });
 
-        chart.addListener("rendered", zoomChart);
+        single_stock_chart.addListener("rendered", zoomChart);
 
-        zoomChart(chart);
+        zoomChart(single_stock_chart);
       });
-    })
+    });
+    
+    $('.select-stock').trigger('change');
   })

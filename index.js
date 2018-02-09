@@ -78,8 +78,14 @@ app.get('/', function(req, res){
 // Bring the routers for all available paths
 let users = require('./routes/users');
 app.use('/users', users);
-let stocks = require('./routes/stocks');
+let stocks = require('./routes/portfolio');
 app.use('/stocks', stocks);
+let buy = require('./routes/buy');
+app.use('/stocks', buy);
+let sell = require('./routes/sell');
+app.use('/stocks', sell);
+let analysis = require('./routes/analysis');
+app.use('/stocks', analysis);
 let indivStocks = require('./routes/indivStocks');
 app.use('/indiv-stock', indivStocks);
 

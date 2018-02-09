@@ -6,15 +6,21 @@ block content
 	.container
 		br
 		h2 #{portfolio.name}
+		p.lead Description: #{portfolio.description}
 		//- Round availableCapital to nearest two decimal places
 		- var factor = Math.pow(10, 2);
 		- var availableCapital = portfolio.availableCapital
-		h4 Available Capital: #{Math.round(availableCapital * factor) / factor}
-		p.lead #{portfolio.description}
+		h5 Starting Capital: #{portfolio.capital}
+		- var currentValue = portfolio.currentValue
+		h5 Current Value: #{Math.round(currentValue * factor) / factor}
+		h5 Available Capital: #{Math.round(availableCapital * factor) / factor}
+		br
 		
 		ul.nav.nav-tabs(role='tablist')
 			li.nav-item.mr-2
-				a.nav-link(data-toggle="tab" href="#overview" role="tab") Portfolio Overview
+				a.nav-link.active(data-toggle="tab" href="#overview" role="tab") Portfolio Overview
+			li.nav-item.mr-2
+				a.nav-link(data-toggle="tab" href="#predictions" role="tab") Performance Predictions
 			li.nav-item.mr-auto
 				a.nav-link(data-toggle="tab" href="#marketplace" role="tab") Marketplace
 			li.nav-item
@@ -25,17 +31,14 @@ block content
 			#overview.tab-pane.show.active(role='tabpanel')
 				include includes/new-section-modal.pug
 				include includes/buy-more-shares.pug
-
 				.d-flex.flex-row.align-items-center
 					h2.mr-4 Investments
 					button.btn.btn-success(data-toggle='modal' data-target='#new-section-modal')
 						span.fas.fa-plus.fa-lg
 				br
-				.d-flex.flex-row.align-items-center.justify-content-center
-					#section-performances(style='height: 60vh;')
-				br
 				if !portfolio.sections || portfolio.sections.length === 0
-					.alert.alert-error It appears this portfolio doesn't have any sections, make a new one to get started!
+					.alert.alert-warning It appears this portfolio doesn't have any sections, make a new one to get started!
+						|  (Click the green plus sign)
 				else
 					
 					//- sectionId is used to keep track of the section index
@@ -49,7 +52,7 @@ block content
 								.card-block.p-4
 									h5.card-subtitle.mb-2 Holdings
 									if !section.holdings || section.holdings.length === 0
-										.alert.alert-error It appears this section doesn't have any holdings, head over to the Marketplace to purchase some stocks!
+										.alert.alert-warning It appears this section doesn't have any holdings, head over to the Marketplace to purchase some stocks!
 									else
 										table.table.table-striped
 											thead
@@ -88,16 +91,28 @@ block content
 						- sectionId++
 
 						br
+			#predictions.tab-pane(role='tabpanel')
+				.d-flex.flex-row.justify-content-center
+					div
+						.d-flex.flex-column.align-items-center.justify-content-center(style='margin-right: 2em;')
+							h4 Section Performances
+							#section-performances(style='height: 60vh;')
+					div
+						.d-flex.flex-column.align-items-center.justify-content-center(style='margin-right: 2em;')
+							h4 Portfolio Performance
+							#portfolio-performance(style='height: 80vh; width: 60vw;')
+				br
+				
 			#marketplace.tab-pane(role='tabpanel')
 				ul.nav.nav-pills.justify-content-center
 					li.nav-item.active.mr-3
-						a.nav-link(data-toggle="pill" href="#basic-search" role="tab") Basic Search
+						a.nav-link.active(data-toggle="pill" href="#basic-search" role="tab") Basic Search
 					li.nav-item.mr-3
 						a.nav-link(data-toggle="pill" href="#advanced-search" role="tab") Advanced Search
 
 				br
 				.tab-content.d-flex.justify-content-center
-					#basic-search.tab-pane(role='tabpanel')
+					#basic-search.tab-pane.show.active(role='tabpanel')
 						.row.mb-4
 							.col-md-6
 								select.select-stock.form-control( style='width: 50em;')
@@ -136,10 +151,11 @@ block content
 
 
 block javascript
-	include includes/update.pug
+	include includes/portfolio_performance.pug
+	include includes/display-section-performances.pug
+	include includes/update_all_shares.pug
 	include includes/trigger_bulk_purchase.pug
 	include includes/stock_display.pug
-	include includes/display-section-performances.pug
 	script(src='/bower_components/select2/dist/js/select2.min.js')
 	script(src='/bower_components/jquery-validation/dist/jquery.validate.min.js')
 	script(src='/js/settings.js')

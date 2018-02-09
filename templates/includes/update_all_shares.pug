@@ -1,18 +1,50 @@
 script.
 	let port_id = '#{portfolio.portfolio_id}';
+	var portfolio_sections;
+	var section_performance_data;
+	var portfolio_performance_data;
+	var num_updates = 0;
 
 	function precisionRound(number, precision) {
 	  var factor = Math.pow(10, precision);
 	  return Math.round(number * factor) / factor;
 	}
+	
+	params = {'add_performance_pt': false};
+	if(num_updates % 10 === 0)
+		params.add_performance_pt = true;
 
 	function updateAllPrices() {
 		$.ajax({
 			method: 'PUT',
-			url: '/stocks/update-portfolio/' + port_id
+			url: '/stocks/update-portfolio/' + port_id,
+			contentType: 'application/json',
+			dataType: 'json',
+			data: JSON.stringify(params)
 		}).done(function (response) {
-			console.log(response);
-			let price_set = JSON.parse(response);
+			console.log(response)
+			let price_set = response[0];
+			
+			if(num_updates % 10 === 0 && response[1].length !== 0) {
+				portfolio_sections = response[1];
+			  section_performance_data = []
+			  
+			  for(var i = 0; i < portfolio_sections.length; i++) {
+			    var section = portfolio_sections[i];
+			    section_performance_data.push({
+			      'section_name': section.name,
+			      'profits': section.profits,
+			      'color': (section.profits > 0) ? 'forestgreen' : 'firebrick' 
+			    });
+			  }
+				
+				$('#section-performances').trigger('change');
+				
+				
+				portfolio_performance_data = response[2];
+				portfolio_performance_data.splice(0, 1);
+				$('#portfolio-performance').trigger('change');
+			}
 
 			$('.last-price').html(function() {
 				let ticker = $(this).attr('ticker');
@@ -43,6 +75,7 @@ script.
 				return gain;
 			});
 
+			num_updates += 1;
 			/* Update every 10 seconds */
 			setTimeout(updateAllPrices, 10 * 1000);
 		});

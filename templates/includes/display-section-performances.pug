@@ -1,48 +1,39 @@
 script.
-  var portfolio_sections = !{JSON.stringify(portfolio.sections)};
-  var performance_data = []
-  
-  for(var i = 0; i < portfolio_sections.length; i++) {
-    var section = portfolio_sections[i];
-    performance_data.push({
-      'section_name': section.name,
-      'profits': section.profits,
-      'color': (section.profits > 0) ? 'forestgreen' : 'firebrick' 
+  $('#section-performances').on('change', function() {
+    section_performance_data.sort(function(a, b) {
+      return (a.profits > b.profits ? -1 : 1);
+    })
+    
+    let width = (section_performance_data.length * 5) + 'em';
+    $('#section-performances').css('width', width)
+    
+    var section_performance_chart = AmCharts.makeChart('section-performances', {
+      "theme": "none",
+      "type": "serial",
+    	"startDuration": 2,
+      "dataProvider": section_performance_data,
+      "graphs": [{
+          "balloonText": "[[category]]: <b>[[value]]</b>",
+          "fillColorsField": "color",
+          "fillAlphas": 1,
+          "lineAlpha": 0.1,
+          "type": "column",
+          "valueField": "profits"
+      }],
+      "depth3D": 15,
+      "angle": 50,
+      "chartCursor": {
+          "categoryBalloonEnabled": false,
+          "cursorAlpha": 0,
+          "zoomable": false
+      },
+      "categoryField": "section_name",
+      "categoryAxis": {
+          "gridPosition": "start",
+          "labelRotation": 45
+      },
+      "export": {
+      	"enabled": false
+      }
     });
-  }
-  performance_data.sort(function(a, b) {
-    return (a.profits > b.profits ? -1 : 1);
-  })
-  
-  let width = (performance_data.length * 5) + 'em';
-  $('#section-performances').css('width', width)
-  
-  var section_performance_chart = AmCharts.makeChart('section-performances', {
-    "theme": "none",
-    "type": "serial",
-  	"startDuration": 2,
-    "dataProvider": performance_data,
-    "graphs": [{
-        "balloonText": "[[category]]: <b>[[value]]</b>",
-        "fillColorsField": "color",
-        "fillAlphas": 1,
-        "lineAlpha": 0.1,
-        "type": "column",
-        "valueField": "profits"
-    }],
-    "depth3D": 15,
-    "angle": 50,
-    "chartCursor": {
-        "categoryBalloonEnabled": false,
-        "cursorAlpha": 0,
-        "zoomable": false
-    },
-    "categoryField": "section_name",
-    "categoryAxis": {
-        "gridPosition": "start",
-        "labelRotation": 45
-    },
-    "export": {
-    	"enabled": false
-    }
   });
