@@ -9,23 +9,20 @@ script.
 	  var factor = Math.pow(10, precision);
 	  return Math.round(number * factor) / factor;
 	}
-	
-	params = {'add_performance_pt': false};
-	if(num_updates % 10 === 0)
-		params.add_performance_pt = true;
 
 	function updateAllPrices() {
+		console.log('making request')
+		
 		$.ajax({
 			method: 'PUT',
 			url: '/stocks/update-portfolio/' + port_id,
 			contentType: 'application/json',
-			dataType: 'json',
-			data: JSON.stringify(params)
+			dataType: 'json'
 		}).done(function (response) {
 			console.log(response)
 			let price_set = response[0];
 			
-			if(num_updates % 10 === 0 && response[1].length !== 0) {
+			if(num_updates % 2 === 0 && response[1].length !== 0) {
 				portfolio_sections = response[1];
 			  section_performance_data = []
 			  
@@ -37,13 +34,13 @@ script.
 			      'color': (section.profits > 0) ? 'forestgreen' : 'firebrick' 
 			    });
 			  }
+				console.log(section_performance_data)
 				
 				$('#section-performances').trigger('change');
-				
-				
+			
 				portfolio_performance_data = response[2];
-				portfolio_performance_data.splice(0, 1);
 				$('#portfolio-performance').trigger('change');
+				console.log('updated performance data');
 			}
 
 			$('.last-price').html(function() {
@@ -76,11 +73,12 @@ script.
 			});
 
 			num_updates += 1;
+			
 			/* Update every 10 seconds */
-			setTimeout(updateAllPrices, 10 * 1000);
+			setTimeout(updateAllPrices, 30 * 1000);
 		});
 	}
 
 	$(document).ready( function() {
-		updateAllPrices()
+		updateAllPrices();
 	});

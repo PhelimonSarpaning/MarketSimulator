@@ -1,6 +1,6 @@
 script.
   $('#portfolio-performance').on('change', function() {
-    /* let width = (section_performance_data.length * 5) + 'em'; */
+    console.log('triggered update performance');
     console.log(portfolio_performance_data);
     
     var portfolio_performance_chart = AmCharts.makeChart('portfolio-performance', {

@@ -44,7 +44,7 @@ function updatePrices(section, index) {
 						let buy_price = holdings[index].purchasePrice;
 
 						var singleStock = holdings[index];
-						// price = Math.random() * 100;
+						price = Math.random() * 100;
 						singleStock.lastPrice = price;
 						singleStock.percentGain = precisionRound((price - buy_price) / buy_price * 100, 2);
 						singleStock.absoluteGain = precisionRound(price - buy_price, 2);
@@ -82,10 +82,28 @@ function updateSingleHolding(ticker, holdings, holdings_count) {
 	});
 }
 
+function should_update_performance(last_update) {
+	// var last_update_time = moment(last_update, 'YYYY:MM:DD hh:mm:ss');
+	var last_update_time = moment(last_update, 'YYYY:MM:DD HH:mm:ss');
+	var now = moment();
+	console.log(last_update_time);
+	console.log(now);
+
+	if(last_update_time.dayOfYear() < now.dayOfYear()  ||
+			last_update_time.get('hour') < now.get('hour') ||
+			last_update_time.get('minute') <= now.get('minute') - 5 ) {
+		console.log('returning true')
+		return true;
+	}
+
+	console.log('returning false')
+	return false;
+}
+
 // Route for updating the prices of all stocks in a portfolio
 router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
-  console.log(req.body);
-	const portfolio_id = req.params.id;
+	console.log('request made')
+  const portfolio_id = req.params.id;
 	var new_sections = [];
 	var ticker_prices = {};
 
@@ -119,32 +137,39 @@ router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
 								if(new_sections.length === sections.length) {
 									portfolio.currentValue = current_portfolio_value;
 									portfolio.sections = new_sections;
-                  if(req.body.add_performance_pt) {
-                    portfolio.performance_points.push({
-                      time: moment().format('YYYY:MM:DD hh:mm:ss'),
+
+                  if(should_update_performance(portfolio.last_performance_update)) {
+										var update_time = moment().format('YYYY:MM:DD HH:mm:ss');
+
+										portfolio.performance_points.push({
+                      time: update_time,
                       value: precisionRound(portfolio.currentValue, 2)
                     })
+										portfolio.last_performance_update = update_time;
                   }
 
-                  doc.portfolios[count] = portfolio;
+									doc.portfolios[count] = portfolio;
+									doc.markModified('portfolios.' + count + '.performance_points');
+									doc.markModified('portfolios.' + count + '.last_performance_update');
 									doc.markModified('portfolios.' + count + '.currentValue');
-                  doc.markModified('portfolios.' + count + '.performance_points');
 									doc.markModified('portfolios.' + count + '.sections');
 
 									doc.save(function(err) {
-                    let ret = JSON.stringify([ticker_prices, new_sections,
-                      portfolio.performance_points]);
-                    return res.send(ret);
+										var return_data = [ticker_prices, new_sections,
+												portfolio.performance_points];
+                    return res.send(JSON.stringify(return_data));
 									});
 								}
-							}, function(reason) {
+							},
+							function(reason) {
+								console.log(reason);
 								req.flash('We were unable to update your stocks.');
 								return res.send(reason);
 							});
 					}
 
           // Prevent the loop from continuing to run after a match is found
-					return;
+					break;
 				}
 			}
 		}

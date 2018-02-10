@@ -5,6 +5,7 @@ const ensureAuthenticated = require('./authenticated');
 //request module for making get requests to IEX
 const request = require('request');
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 //Express validator middleware
 const { check, validationResult } = require('express-validator/check');
@@ -52,6 +53,7 @@ router.post('/new-portfolio', ensureAuthenticated, [
 			availableCapital: parseInt(req.body.capital),
 			portfolio_id: mongoose.Types.ObjectId().toString(),
 			performance_points: [],
+			last_performance_update: moment().subtract(1, 'hours').format('YYYY:MM:DD hh:mm:ss'),
 			sections: []
 		}
 
