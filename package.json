@@ -25,10 +25,12 @@
     "express-validator": "^4.3.0",
     "moment": "^2.20.1",
     "mongoose": "^5.0.0-rc0",
+    "newsapi": "^2.2.0",
     "nodemon": "^1.14.7",
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",
     "pug": "^2.0.0-rc.4",
-    "request": "^2.83.0"
+    "request": "^2.83.0",
+    "sentiment": "^4.2.0"
   }
 }

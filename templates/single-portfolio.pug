@@ -12,7 +12,7 @@ block content
 		- var availableCapital = portfolio.availableCapital
 		h5 Starting Capital: #{portfolio.capital}
 		- var currentValue = portfolio.currentValue
-		h5 Current Value: #{Math.round(currentValue * factor) / factor}
+		h5.current-value Current Value: #{Math.round(currentValue * factor) / factor}
 		h5 Available Capital: #{Math.round(availableCapital * factor) / factor}
 		br
 		
@@ -20,9 +20,11 @@ block content
 			li.nav-item.mr-2
 				a.nav-link.active(data-toggle="tab" href="#overview" role="tab") Portfolio Overview
 			li.nav-item.mr-2
-				a.nav-link(data-toggle="tab" href="#predictions" role="tab") Performance Predictions
-			li.nav-item.mr-auto
+				a.nav-link(data-toggle="tab" href="#predictions" role="tab") Performance
+			li.nav-item
 				a.nav-link(data-toggle="tab" href="#marketplace" role="tab") Marketplace
+			li.nav-item.mr-auto
+				a.nav-link(data-toggle="tab" href="#newstab" role="tab") News
 			li.nav-item
 				a.nav-link(data-toggle="tab" href="#settings" role="tab") Settings
 		br
@@ -102,6 +104,9 @@ block content
 							h4 Portfolio Performance
 							#portfolio-performance(style='height: 80vh; width: 50vw;')
 				br
+			
+			#newstab.tab-pane(role='tabpanel')
+				.news-container
 				
 			#marketplace.tab-pane(role='tabpanel')
 				ul.nav.nav-pills.justify-content-center
@@ -154,6 +159,7 @@ block javascript
 	include includes/portfolio_performance.pug
 	include includes/display-section-performances.pug
 	include includes/update_all_shares.pug
+	include includes/risk_analysis.pug
 	include includes/trigger_bulk_purchase.pug
 	include includes/stock_display.pug
 	script(src='/bower_components/select2/dist/js/select2.min.js')

@@ -1,0 +1,19 @@
+script.
+  let companies = '#{companies}'
+  console.log(companies)
+
+  function updateNews() {
+    $.ajax({
+      url: '/stocks/update-news/' + port_id,
+      method: 'GET',
+      contentType: 'application/json',
+    }).done(function(response) {
+      console.log(response);
+    })
+  }
+  
+  $(document).ready(function() {
+    updateNews();
+  })
+  
+  

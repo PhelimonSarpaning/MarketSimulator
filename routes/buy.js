@@ -19,6 +19,7 @@ const baseUrl = 'https://api.iextrading.com/1.0';
 router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, function(req, res) {
 	const ticker = req.params.ticker;
 	const section_id = req.body.addSection;
+	const company_name = req.body.companyName;
 	const shares = parseInt(req.body.numShares);
 	const id = req.params.portfolio_id;
 
@@ -38,6 +39,7 @@ router.post('/purchase-stock/:portfolio_id/:ticker', ensureAuthenticated, functi
 			} else {
 				const newPurchase = {
 					ticker: ticker,
+					company: company_name,
 					shares: shares,
 					purchasePrice: price,
 					lastPrice: price,

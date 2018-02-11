@@ -4,11 +4,6 @@ script.
       return (a.profits > b.profits ? -1 : 1);
     })
     
-    console.log('triggered update sections');
-    console.log(section_performance_data);
-    /* let width = (section_performance_data.length * 5) + 'em'; */
-    /* $('#section-performances').css('width', width) */
-    
     var section_performance_chart = AmCharts.makeChart('section-performances', {
       "theme": "none",
       "type": "serial",

@@ -3,9 +3,31 @@ const router = express.Router();
 const passport = require('passport');
 const ensureAuthenticated = require('./authenticated');
 //request module for making get requests to IEX
-const request = require('request');
+// const request = require('request');
 const mongoose = require('mongoose');
 const moment = require('moment');
+// News API for getting company news (IEX news data isnt very useful
+// since articles generally discuss multiple stocks)
+const NewsAPI = require('newsapi');
+const newsapi = new NewsAPI('d9ce160445b541d694a6bf31d748f502');
+const sentiment = require('sentiment');
+
+const from_date = moment().subtract(30, 'days').format('YYYY-MM-DD');
+const source_list = `associated-press,
+                  bbc-news,
+                  bloomberg,
+                  business-insider,
+                  financial-post,
+                  financial-times,
+                  fortune,
+                  new-york-magazine,
+                  techcrunch,
+                  the-economist,
+                  the-new-york-times,
+                  the-wall-street-journal,
+                  the-washington-post,
+                  time,
+                  wired`;
 
 //Express validator middleware
 const { check, validationResult } = require('express-validator/check');
@@ -13,167 +35,129 @@ const { check, validationResult } = require('express-validator/check');
 //Bring in the User model
 let User = require('../models/user');
 
-// Base url for making get requests to IEX API
-const baseUrl = 'https://api.iextrading.com/1.0';
-
 function precisionRound(number, precision) {
 	var factor = Math.pow(10, precision);
 	return Math.round(number * factor) / factor;
 }
 
-function updatePrices(section, index) {
-	return new Promise(function(resolve, reject) {
-		if(section.holdings.length === 0) {
-			resolve([section, index, null, section.profits]);
-		} else {
-
-	    // reset the profits when calculating them
-			section.profits = 0;
-			var holdings = section.holdings;
-			var holdings_updated = 0;
-			var ticker_to_price = {};
-
-			for (var holdings_count = 0; holdings_count < holdings.length; holdings_count++) {
-				let ticker = holdings[holdings_count].ticker;
-
-				updateSingleHolding(ticker, holdings, holdings_count)
-					.then(function(result) {
-						var price = result[0];
-						let index = result[1];
-						let ticker_of_price = result[2];
-						let buy_price = holdings[index].purchasePrice;
-
-						var singleStock = holdings[index];
-						price = Math.random() * 100;
-						singleStock.lastPrice = price;
-						singleStock.percentGain = precisionRound((price - buy_price) / buy_price * 100, 2);
-						singleStock.absoluteGain = precisionRound(price - buy_price, 2);
-
-						let total_absolute_gain = singleStock.absoluteGain * singleStock.shares;
-						section.profits += total_absolute_gain;
-
-						holdings[index] = singleStock;
-						holdings_updated++;
-
-						ticker_to_price[ticker_of_price] = price;
-						// ticker_to_price[ticker_of_price] = rand_num;
-
-						if(holdings_updated === holdings.length) {
-							section.holdings = holdings;
-							resolve([section, index, ticker_to_price, total_absolute_gain]);
-						}
-					}, function(reason) {
-						reject(reason);
-					})
-			}
-		}
-	});
+function sanitizeCompanyName(company) {
+  // need to work on making this list more thorough
+  var remove_list = ['.com']
+  for(modifier of remove_list)
+    company = company.replace(modifier, '');
+  return company;
 }
 
-function updateSingleHolding(ticker, holdings, holdings_count) {
-	return new Promise(function(resolve, reject) {
-		const fullUrl = baseUrl + '/stock/' + ticker + '/quote';;
-		request.get(fullUrl, function(err, response, body) {
-			if(err)
-				reject()
-			var quote = JSON.parse(body);
-			resolve([quote.latestPrice, holdings_count, ticker]);
-		});
-	});
+function getTopHeadlines(company) {
+  return new Promise(function(resolve, reject) {
+    console.log('Requesting headlines for ' + company)
+    newsapi.v2.topHeadlines({
+      q: company,
+      language: 'en'
+    }).then(function(headlines) {
+      if(!headlines)
+        reject()
+
+      resolve(headlines.articles);
+    });
+  });
 }
 
-function should_update_performance(last_update) {
-	// var last_update_time = moment(last_update, 'YYYY:MM:DD hh:mm:ss');
-	var last_update_time = moment(last_update, 'YYYY:MM:DD HH:mm:ss');
-	var now = moment();
-	console.log(last_update_time);
-	console.log(now);
+function getNewsAnalysis(company) {
+  return new Promise(function(resolve, reject) {
+    console.log('Requesting analysis for ' + company)
+    newsapi.v2.everything({
+      q: company,
+      sources: source_list,
+      from: from_date,
+      language: 'en',
+      sortBy: 'relevancy'
+    }).then(function(response) {
+      if(!response)
+        reject()
 
-	if(last_update_time.dayOfYear() < now.dayOfYear()  ||
-			last_update_time.get('hour') < now.get('hour') ||
-			last_update_time.get('minute') <= now.get('minute') - 5 ) {
-		console.log('returning true')
-		return true;
-	}
+      var num_positive = 0;
+      var num_negative = 0;
+      var total_analyzed = 0;
+      var running_score = 0;
 
-	console.log('returning false')
-	return false;
+      for (article of response.articles) {
+        var title_result = sentiment(article.title)
+        var desc_result = sentiment(article.description)
+
+        var composite_score = (title_result.score + desc_result.score) / 2;
+        running_score = (running_score * total_analyzed + composite_score) / (total_analyzed + 1);
+        total_analyzed++;
+
+        var positive_length = title_result.positive.length + desc_result.positive.length;
+        var negative_length = title_result.negative.length + desc_result.negative.length;
+        var positive = (positive_length > negative_length) ? true : false;
+
+        if(positive)
+          num_positive++;
+        else
+          num_negative++;
+      }
+
+      getTopHeadlines(company)
+        .then(function(headlines) {
+          var ret_obj = {
+            score: running_score,
+            num_positive: num_positive,
+            num_negative: num_negative,
+            articles: headlines
+          }
+
+          console.log(ret_obj)
+          resolve([company, ret_obj]);
+        })
+    });
+  });
 }
 
-// Route for updating the prices of all stocks in a portfolio
-router.put('/update-portfolio/:id', ensureAuthenticated, function(req, res) {
-	console.log('request made')
+
+router.get('/update-news/:id', ensureAuthenticated, function(req, res) {
   const portfolio_id = req.params.id;
-	var new_sections = [];
-	var ticker_prices = {};
+  User.findOne({username: req.user.username,
+    'portfolios.portfolio_id': portfolio_id}, function(err, doc) {
+      if(err || !doc) {
+        return res.send(JSON.stringify({error: true, msg: err}));
+      }
 
-	User.findOne({username: req.user.username,
-			'portfolios.portfolio_id': portfolio_id},
-		function(err, doc) {
-			var portfolios = doc.portfolios;
+      var portfolio;
+      var num_calculations = 0;
+      for (port of doc.portfolios) {
+        if(port.portfolio_id === portfolio_id) {
+          portfolio = port;
+          for(section of portfolio.sections)
+            num_calculations += section.holdings.length;
+          break;
+        }
+      }
 
-			for (var count = 0; count < portfolios.length; count++) {
-				if(portfolios[count].portfolio_id === portfolio_id) {
-					// console.log('running')
-					var portfolio = doc.portfolios[count];
-					var current_portfolio_value = portfolio.availableCapital;
-					var sections = portfolio.sections;
+			var company_names = [];
+      var ret_data = {};
+			for(var section_count = 0; section_count < portfolio.sections.length; section_count++) {
+				let section_holdings = portfolio.sections[section_count].holdings;
+				for(var holding_count = 0; holding_count < section_holdings.length; holding_count++) {
+          var company = sanitizeCompanyName(section_holdings[holding_count].company);
+					company_names.push(company);
+          console.log(company)
 
-					for (var i = 0; i < sections.length; i++) {
-						updatePrices(sections[i], i)
-							.then(function(result) {
-								let updated_section = result[0];
-								let index = result[1];
-								let price_set = result[2];
+          getNewsAnalysis(company)
+            .then(function(scores) {
+              var scores_company = scores[0];
+              var scores = scores[1];
+              ret_data[scores_company] = scores;
 
-								let total_absolute_gain = result[3];
-								current_portfolio_value += total_absolute_gain;
-
-								sections[index] = updated_section;
-								new_sections.push(updated_section);
-
-								Object.assign(ticker_prices, price_set);
-
-								if(new_sections.length === sections.length) {
-									portfolio.currentValue = current_portfolio_value;
-									portfolio.sections = new_sections;
-
-                  if(should_update_performance(portfolio.last_performance_update)) {
-										var update_time = moment().format('YYYY:MM:DD HH:mm:ss');
-
-										portfolio.performance_points.push({
-                      time: update_time,
-                      value: precisionRound(portfolio.currentValue, 2)
-                    })
-										portfolio.last_performance_update = update_time;
-                  }
-
-									doc.portfolios[count] = portfolio;
-									doc.markModified('portfolios.' + count + '.performance_points');
-									doc.markModified('portfolios.' + count + '.last_performance_update');
-									doc.markModified('portfolios.' + count + '.currentValue');
-									doc.markModified('portfolios.' + count + '.sections');
-
-									doc.save(function(err) {
-										var return_data = [ticker_prices, new_sections,
-												portfolio.performance_points];
-                    return res.send(JSON.stringify(return_data));
-									});
-								}
-							},
-							function(reason) {
-								console.log(reason);
-								req.flash('We were unable to update your stocks.');
-								return res.send(reason);
-							});
-					}
-
-          // Prevent the loop from continuing to run after a match is found
-					break;
-				}
+              num_calculations--;
+              if(num_calculations === 0) {
+                return res.send(ret_data);
+              }
+            });
 			}
-		}
-	);
+    }
+  });
 });
 
 module.exports = router;

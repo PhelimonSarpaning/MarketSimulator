@@ -84,6 +84,8 @@ let buy = require('./routes/buy');
 app.use('/stocks', buy);
 let sell = require('./routes/sell');
 app.use('/stocks', sell);
+let performanceAnalysis = require('./routes/performanceAnalysis');
+app.use('/stocks', performanceAnalysis);
 let analysis = require('./routes/analysis');
 app.use('/stocks', analysis);
 let indivStocks = require('./routes/indivStocks');
@@ -91,5 +93,5 @@ app.use('/indiv-stock', indivStocks);
 
 //START SERVER
 app.listen(3000, function() {
-	console.log("Server started on port 9229");
+	console.log("Server started on port 3000");
 });
