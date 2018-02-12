@@ -108,7 +108,6 @@ function getNewsAnalysis(company) {
             articles: headlines
           }
 
-          console.log(ret_obj)
           resolve([company, ret_obj]);
         })
     });
